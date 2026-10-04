@@ -1,32 +1,82 @@
+<div align="center">
+
 # KubeFlight
 
 [![CI](https://github.com/zyvorai/zyvor-kubeflight/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/zyvor-kubeflight/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-0071e3?style=flat-square&labelColor=1d1d1f)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.2.0-informational)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+[![Docs](https://img.shields.io/badge/Docs-zyvorai.github.io%2Fzyvor--kubeflight-0071e3)](https://zyvorai.github.io/zyvor-kubeflight/)
 
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
-[![30-day PoC](https://img.shields.io/badge/30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
-
-[![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
-[![30-day PoC](https://img.shields.io/badge/30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
-
-[![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
-[![30-day PoC](https://img.shields.io/badge/30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
+[![30-day PoC](https://img.shields.io/badge/30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
+[![Quickstart](https://img.shields.io/badge/Quickstart_with_pip-30d158?style=for-the-badge)](#quickstart)
 
 ![KubeFlight — Kubernetes preflight simulator](docs/social/kubeflight-hero-dark.jpg)
 
-**Know what may break before you deploy.**
+### Know what may break before you deploy.
+
+**A deterministic Kubernetes preflight that simulates the deploy, not just the YAML.** It renders your manifests, places every replica against a cluster snapshot, evaluates security, RBAC and NetworkPolicy, diffs change impact, estimates cost and returns an evidence-backed safety decision, all locally.
+
+**Placement simulation** · **RBAC + NetworkPolicy** · **Blast radius and cost delta** · **SARIF for GitHub** · **0 LLM decisions**
+
+</div>
 
 > KubeFlight is intentionally deterministic. It does not use an LLM to decide whether a deployment is safe.
 
-[**Docs site**](https://zyvorai.github.io/zyvor-kubeflight/) · [**Is this for you?**](#is-this-for-you) · [**v0.2.0 capabilities**](#v020-capabilities) · [**Quick start**](#quick-start) · [**License**](#license)
+---
 
-KubeFlight is an Apache-2.0, local-first Kubernetes deployment simulator and preflight engine from Zyvor AI Labs. It analyzes rendered manifests, optionally compares them with a baseline and cluster snapshot, simulates placement, evaluates security/RBAC/network policy, estimates change cost, and returns an evidence-backed safety decision.
+## What's new
+
+Version 0.2.0 ([CHANGELOG.md](CHANGELOG.md)):
+
+| | |
+|---|---|
+| **Real scheduler simulation** | Existing non-terminal Pods are deducted, every replica is placed, with taints/tolerations, required affinity/anti-affinity and hard topology spread. |
+| **Correct request accounting** | App, init and native-sidecar containers, RuntimeClass overhead, ephemeral storage and extended resources such as GPUs. |
+| **Deletion-aware blast radius** | Baseline and proposed dependency graphs are combined, so a deleted Service keeps its former dependents. |
+| **Ingress and egress NetworkPolicy** | Both directions evaluated, with selectors and ports. |
+| **RBAC permission contracts** | API groups, verbs and resourceNames, checked against submitted Roles and bindings. |
+| **`kubeflight plan`, Markdown and SARIF** | Auto-detects deployment roots and Helm/Kustomize renderers; the GitHub Action emits JSON, SARIF and a step summary. |
+| **Safer defaults** | No service-account token mounted by default; live-cluster mode is explicit, read-only and needs bearer auth. |
+
+---
+
+## Why KubeFlight
 
 A valid manifest can still fail in production because of node capacity, existing Pods, taints, affinity, NetworkPolicy, missing RBAC, removed APIs, cost growth, availability constraints, or downstream dependencies. KubeFlight puts those signals into one repeatable preflight.
 
-## Is this for you?
+| When this happens… | KubeFlight gives you… |
+|---|---|
+| The manifest passes lint and the Pods sit in `Pending` | **Placement simulation** on real allocatable minus existing Pods, with taints, affinity and topology spread |
+| A deploy needs permissions nobody wrote down | **RBAC contracts** in an annotation, evaluated against the Roles and bindings you submit |
+| A new NetworkPolicy silently cuts off a dependency | **Ingress and egress NetworkPolicy isolation** against statically inferred Service dependencies |
+| Deleting a Service breaks something three hops away | **Deletion-aware blast radius** across baseline and proposed dependency graphs |
+| A change quietly doubles the requests bill | **Provider-neutral cost delta** against the baseline, with rates you calibrate |
+| Reviewers want proof, not a vibe | **Evidence and remediation with every finding**, a 0-100 score, and text, JSON, HTML, Markdown or SARIF reports |
+
+![Capabilities at a glance: Render, Simulate, Evaluate, Ship](docs/ux/readme-capabilities.jpg)
+
+---
+
+## KubeFlight vs Polaris
+
+![KubeFlight vs Polaris: lint the manifest, then simulate the deploy](docs/ux/readme-vs.jpg)
+
+| | **KubeFlight** | **Polaris** |
+|---|---|---|
+| Primary job | Preflight simulation with an evidence-backed decision | Best-practice checks on workload configuration |
+| Security checks | Restricted Pod Security, including Windows HostProcess, SELinux, AppArmor and probe hosts | Built-in security checks plus custom checks |
+| Scheduling | Places every replica against an offline or live cluster snapshot | Not simulated |
+| RBAC | Permission contracts evaluated against submitted Roles and bindings | Not a focus |
+| Change impact | Baseline vs proposed diff, dependency graph, deletion-aware blast radius | Not modeled |
+| Cost | Provider-neutral request and storage estimate, baseline delta | Not estimated |
+| Where it runs | CLI, GitHub Action (SARIF), REST API and dashboard; no cluster needed | Dashboard, CLI audit, admission webhook |
+| **Choose Polaris when** | | You want continuous in-cluster audits and admission-time enforcement of best practices |
+
+KubeFlight is a preflight simulator, not an admission controller; run it in CI before the cluster ever sees the change.
+
+### Is this for you?
 
 KubeFlight is a small, open-source (Apache-2.0), local-first, deterministic preflight simulator — it's not a cost-monitoring dashboard, not a general-purpose policy engine, and not an AI-assisted deployment advisor.
 
@@ -40,32 +90,31 @@ KubeFlight is a small, open-source (Apache-2.0), local-first, deterministic pref
 
 *(General characterizations as of writing — verify current features against each project's own docs.)*
 
-**Maturity, stated honestly**: current version is 0.2.0 ([`CHANGELOG.md`](CHANGELOG.md)). KubeFlight is a **preflight simulator**, not a byte-for-byte implementation of kube-scheduler plugins, admission webhooks, CNI dataplanes, or production traffic. Unknown facts are reported conservatively rather than invented. For an authoritative check beyond simulation, it explicitly defers to `kubectl apply --dry-run=server` as an opt-in feature requiring a real cluster.
+---
 
-Release validation ([`TEST_RESULTS.md`](TEST_RESULTS.md)): 35/35 unit/API/CLI/regression tests pass, a demo preflight scores 84/100 (review required — the demo manifest is intentionally imperfect), and KubeFlight's own Kubernetes deployment self-analyzes at 100/100 with zero high/critical findings.
+## See it live
 
-New here? [`docs/FAQ.md`](docs/FAQ.md) covers licensing, support, and production-readiness questions; [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) covers real operational issues with their documented fix.
+![KubeFlight dashboard: paste a manifest, get a safety score of 84 with review required, findings, scheduling, change impact and economics](docs/dashboard.png)
 
-## v0.2.0 capabilities
+*The embedded dashboard (`kubeflight serve`): the demo preflight scores 84/100, review required, with every finding explained.* A sample rendered report: [docs/demo-report.html](docs/demo-report.html).
 
-| Area | Checks |
-| --- | --- |
-| Parsing/rendering | multi-document YAML/JSON, Kubernetes `List`, Helm auto-render, Kustomize auto-render, repo path auto-detection |
-| Schema baseline | object identity, structural checks, selector/template consistency, removed APIs; optional authoritative `kubectl --dry-run=server` |
-| Quantities | Kubernetes-style DecimalSI/BinarySI/scientific quantities; invalid quantities fail closed instead of becoming zero |
-| Restricted security | host namespaces, hostPath, privileged, capabilities, seccomp, non-root/UID 0, SELinux, AppArmor, Windows HostProcess, probe/lifecycle host fields |
-| Scheduling | existing Pod reservations, every replica, app/init/native-sidecar accounting, RuntimeClass overhead, GPU/extended resources, taints/tolerations, required affinity/anti-affinity, hard topology spread |
-| Reliability | requests/limits, readiness/liveness, PDB coverage, image pinning |
-| Network | statically inferred Service dependencies, ingress + egress NetworkPolicy isolation |
-| RBAC | ServiceAccount presence plus explicit API group/resource/subresource/verb/resourceName contracts via annotation |
-| Change impact | baseline/proposed resource diff, dependency graphs, deletion-aware reverse blast radius |
-| Cost | provider-neutral request/storage estimate and baseline delta |
-| Reports | text, JSON, HTML, Markdown/PR summary, SARIF |
-| API/UI | FastAPI REST API, OpenAPI docs, embedded dashboard, request-size/concurrency/rate guards, optional bearer auth |
-| Kubernetes | hardened raw manifests, Kustomize, Helm, opt-in live-cluster RBAC, restricted Pod Security namespace |
-| GitHub | composite Action, SARIF upload, Helm/Kustomize checks, container build, kind E2E, multi-arch release |
+---
 
-## Quick start
+## How it fits together
+
+![One preflight, nine deterministic stages: render and schema, security/RBAC/network, scheduler and graph, cost/score/report](docs/ux/readme-how-it-works.jpg)
+
+KubeFlight is a deterministic preflight pipeline ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)):
+
+`input -> render/parse -> structural/schema checks -> security/RBAC/network -> scheduler simulation -> change graph -> cost -> scoring -> reports`
+
+**Design principles**: deterministic first · evidence and remediation with every finding · local-first, no SaaS dependency · no cluster credentials in the default deployment · unknown is not the same as safe or blocked · server dry-run/admission remains authoritative when enabled · simulation limitations are part of the output contract.
+
+---
+
+## Quickstart
+
+Requires **Python 3.11+**.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -84,6 +133,8 @@ kubeflight plan
 ```
 
 Reports: `kubeflight check <path> --format json|html|markdown|sarif --output <file>`. Optional authoritative validation: `kubeflight check <path> --server-dry-run` shells out to `kubectl apply --dry-run=server` against a configured cluster.
+
+New here? [`docs/FAQ.md`](docs/FAQ.md) covers licensing, support, and production-readiness questions; [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) covers real operational issues with their documented fix.
 
 ### Dashboard
 
@@ -148,7 +199,6 @@ kubeflight/
 └── .github/workflows/      # CI, kind E2E, release/SBOM/provenance
 ```
 
-**Design principles**: deterministic first · evidence and remediation with every finding · local-first, no SaaS dependency · no cluster credentials in the default deployment · unknown is not the same as safe or blocked · server dry-run/admission remains authoritative when enabled · simulation limitations are part of the output contract.
 
 ## Docs map
 
@@ -162,6 +212,26 @@ kubeflight/
 | Real issues with their documented fix | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
 | Rendered documentation site | <https://zyvorai.github.io/zyvor-kubeflight/> |
 
+
+## v0.2.0 capabilities
+
+| Area | Checks |
+| --- | --- |
+| Parsing/rendering | multi-document YAML/JSON, Kubernetes `List`, Helm auto-render, Kustomize auto-render, repo path auto-detection |
+| Schema baseline | object identity, structural checks, selector/template consistency, removed APIs; optional authoritative `kubectl --dry-run=server` |
+| Quantities | Kubernetes-style DecimalSI/BinarySI/scientific quantities; invalid quantities fail closed instead of becoming zero |
+| Restricted security | host namespaces, hostPath, privileged, capabilities, seccomp, non-root/UID 0, SELinux, AppArmor, Windows HostProcess, probe/lifecycle host fields |
+| Scheduling | existing Pod reservations, every replica, app/init/native-sidecar accounting, RuntimeClass overhead, GPU/extended resources, taints/tolerations, required affinity/anti-affinity, hard topology spread |
+| Reliability | requests/limits, readiness/liveness, PDB coverage, image pinning |
+| Network | statically inferred Service dependencies, ingress + egress NetworkPolicy isolation |
+| RBAC | ServiceAccount presence plus explicit API group/resource/subresource/verb/resourceName contracts via annotation |
+| Change impact | baseline/proposed resource diff, dependency graphs, deletion-aware reverse blast radius |
+| Cost | provider-neutral request/storage estimate and baseline delta |
+| Reports | text, JSON, HTML, Markdown/PR summary, SARIF |
+| API/UI | FastAPI REST API, OpenAPI docs, embedded dashboard, request-size/concurrency/rate guards, optional bearer auth |
+| Kubernetes | hardened raw manifests, Kustomize, Helm, opt-in live-cluster RBAC, restricted Pod Security namespace |
+| GitHub | composite Action, SARIF upload, Helm/Kustomize checks, container build, kind E2E, multi-arch release |
+
 ## Security
 
 See [`SECURITY.md`](SECURITY.md) and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for the asset/trust model and vulnerability reporting.
@@ -170,20 +240,45 @@ See [`SECURITY.md`](SECURITY.md) and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.
 
 Build/test commands and PR expectations are in [`CONTRIBUTING.md`](CONTRIBUTING.md); community conduct in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Release history: [`CHANGELOG.md`](CHANGELOG.md).
 
+---
+
+## Maturity
+
+**Maturity, stated honestly**: current version is 0.2.0 ([`CHANGELOG.md`](CHANGELOG.md)). KubeFlight is a **preflight simulator**, not a byte-for-byte implementation of kube-scheduler plugins, admission webhooks, CNI dataplanes, or production traffic. Unknown facts are reported conservatively rather than invented. For an authoritative check beyond simulation, it explicitly defers to `kubectl apply --dry-run=server` as an opt-in feature requiring a real cluster.
+
+Release validation ([`TEST_RESULTS.md`](TEST_RESULTS.md)): 35/35 unit/API/CLI/regression tests pass, a demo preflight scores 84/100 (review required — the demo manifest is intentionally imperfect), and KubeFlight's own Kubernetes deployment self-analyzes at 100/100 with zero high/critical findings.
+
+---
+
+## Part of the Zyvor stack
+
+| Product | Role next to KubeFlight |
+|---|---|
+| **KubeFlight** | Deterministic Kubernetes preflight: before the deploy |
+| **[Netra](https://github.com/zyvorai/zyvor-netra)** | Pairs with KubeFlight after the deploy: eBPF network observability and emergency control on any CNI |
+| **[Paqtra](https://github.com/zyvorai/zyvor-paqtra)** | Pairs with KubeFlight on Cilium clusters: Hubble flow tracing, drop explanations and policy preview |
+| **[Argus](https://github.com/zyvorai/zyvorai-argus)** | Next to KubeFlight in the pipeline: generated Playwright tests that run on every deploy |
+
+→ [zyvor.dev](https://zyvor.dev)
+
+---
+
 ## License
 
-Commercial subscriptions and support: see [docs/SUBSCRIPTION-MODEL.md](docs/SUBSCRIPTION-MODEL.md).
+KubeFlight is **free and open source** under the [Apache License 2.0](LICENSE) (see [NOTICE](NOTICE)): use, modify and run it for personal, lab and commercial production use at no charge. That does not change.
 
-### Open source (Apache-2.0)
+**Zyvor Enterprise** adds what production teams ask for: supported releases, deployment and upgrade guidance, priority incident triage, a named technical contact and 24x7 critical intake. Plans and terms: [docs/SUBSCRIPTION-MODEL.md](docs/SUBSCRIPTION-MODEL.md) · [Pricing](https://zyvor.dev/pricing?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_license) · [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
-This repository is licensed under the [Apache License, Version 2.0](LICENSE). You may use, modify, and run it for personal, lab, and commercial production use at no charge, subject to Apache-2.0 (preserve notices / NOTICE where required).
+---
 
-### Enterprise
+<div align="center">
 
-Production support, SLAs, and Zyvor Enterprise products are licensed separately. Contact [sales@zyvor.dev](mailto:sales@zyvor.dev) or see [zyvor.dev](https://zyvor.dev/?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer).
+### Make every deploy a preflight
 
-Book a [demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer) or start a [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer). Fallback: [sales@zyvor.dev](mailto:sales@zyvor.dev).
+[![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer)
+[![30-day PoC](https://img.shields.io/badge/Start_a_30--day_PoC-000000?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer)
+[![Pricing](https://img.shields.io/badge/Pricing-1d1d1f?style=for-the-badge)](https://zyvor.dev/pricing?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer)
+[![Contact sales](https://img.shields.io/badge/Contact_sales-30d158?style=for-the-badge)](mailto:sales@zyvor.dev?subject=KubeFlight)
+[![Star on GitHub](https://img.shields.io/github/stars/zyvorai/zyvor-kubeflight?style=for-the-badge&logo=github&label=Star&color=2997ff)](https://github.com/zyvorai/zyvor-kubeflight)
 
-Book a [demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer) or start a [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer). Fallback: [sales@zyvor.dev](mailto:sales@zyvor.dev).
-
-Book a [demo](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer) or start a [30-day PoC](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_footer). Fallback: [sales@zyvor.dev](mailto:sales@zyvor.dev).
+</div>
