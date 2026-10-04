@@ -1,6 +1,6 @@
 # KubeFlight
 
-[![CI](https://github.com/zyvorai/kubeflight/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/kubeflight/actions/workflows/ci.yml)
+[![CI](https://github.com/zyvorai/zyvor-kubeflight/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/zyvor-kubeflight/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-0071e3?style=flat-square&labelColor=1d1d1f)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.2.0-informational)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
@@ -14,13 +14,13 @@
 [![Book a demo](https://img.shields.io/badge/Book_a_demo-0071e3?style=for-the-badge)](https://zyvor.dev/schedule?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
 [![30-day PoC](https://img.shields.io/badge/30--day_PoC-1d1d1f?style=for-the-badge)](https://zyvor.dev/poc?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_hero)
 
-![KubeFlight — Kubernetes preflight simulator](docs/social/kubeflight-share-card.png)
+![KubeFlight — Kubernetes preflight simulator](docs/social/kubeflight-hero-dark.jpg)
 
 **Know what may break before you deploy.**
 
 > KubeFlight is intentionally deterministic. It does not use an LLM to decide whether a deployment is safe.
 
-[**Docs site**](https://zyvorai.github.io/kubeflight/) · [**Is this for you?**](#is-this-for-you) · [**v0.2.0 capabilities**](#v020-capabilities) · [**Quick start**](#quick-start) · [**License**](#license)
+[**Docs site**](https://zyvorai.github.io/zyvor-kubeflight/) · [**Is this for you?**](#is-this-for-you) · [**v0.2.0 capabilities**](#v020-capabilities) · [**Quick start**](#quick-start) · [**License**](#license)
 
 KubeFlight is an Apache-2.0, local-first Kubernetes deployment simulator and preflight engine from Zyvor AI Labs. It analyzes rendered manifests, optionally compares them with a baseline and cluster snapshot, simulates placement, evaluates security/RBAC/network policy, estimates change cost, and returns an evidence-backed safety decision.
 
@@ -160,7 +160,7 @@ kubeflight/
 | Assets, defaults, non-goals | [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) |
 | Licensing, support, production-readiness | [`docs/FAQ.md`](docs/FAQ.md) |
 | Real issues with their documented fix | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) |
-| Rendered documentation site | <https://zyvorai.github.io/kubeflight/> |
+| Rendered documentation site | <https://zyvorai.github.io/zyvor-kubeflight/> |
 
 ## Security
 
