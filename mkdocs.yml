@@ -1,7 +1,7 @@
 site_name: KubeFlight
 site_description: Know what may break before you deploy — a deterministic Kubernetes preflight simulator.
-site_url: https://zyvorai.github.io/kubeflight/
-repo_url: https://github.com/zyvorai/kubeflight
+site_url: https://zyvorai.github.io/zyvor-kubeflight/
+repo_url: https://github.com/zyvorai/zyvor-kubeflight
 repo_name: zyvorai/kubeflight
 edit_uri: edit/main/docs/
 docs_dir: docs
@@ -50,4 +50,4 @@ nav:
   - Deployment: DEPLOYMENT.md
 extra:
   social:
-    - {icon: fontawesome/brands/github, link: https://github.com/zyvorai/kubeflight}
+    - {icon: fontawesome/brands/github, link: https://github.com/zyvorai/zyvor-kubeflight}
