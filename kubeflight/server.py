@@ -17,6 +17,8 @@ WEB=Path(__file__).with_name("web")
 app=FastAPI(title="KubeFlight",version=__version__,docs_url="/api/docs",redoc_url=None)
 MAX_BODY=int(os.getenv("KUBEFLIGHT_MAX_BODY_BYTES","4194304"));MAX_CONCURRENT=int(os.getenv("KUBEFLIGHT_MAX_CONCURRENT","8"));RATE=int(os.getenv("KUBEFLIGHT_RATE_PER_MINUTE","60"));SEM=asyncio.Semaphore(MAX_CONCURRENT);HITS=defaultdict(deque)
 
+PROBES={"/api/healthz","/api/readyz"}
+
 def _auth_ok(request:Request)->bool:
     expected=os.getenv("KUBEFLIGHT_API_TOKEN","")
     if not expected:return True
@@ -31,8 +33,11 @@ async def guard(request:Request,call_next):
         try:
             if int(cl)>MAX_BODY:return JSONResponse({"detail":"request body too large"},status_code=413)
         except ValueError:return JSONResponse({"detail":"invalid Content-Length"},status_code=400)
+    if request.url.path in PROBES:return await call_next(request)
     ip=request.client.host if request.client else "unknown";now=time.time();q=HITS[ip]
     while q and q[0]<now-60:q.popleft()
+    if len(HITS)>1024:
+        for k in [k for k,v in HITS.items() if k!=ip and (not v or v[-1]<now-60)]:del HITS[k]
     if len(q)>=RATE:return JSONResponse({"detail":"rate limit exceeded"},status_code=429)
     q.append(now)
     async with SEM:return await call_next(request)

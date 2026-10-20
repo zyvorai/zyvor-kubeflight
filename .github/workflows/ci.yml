@@ -48,7 +48,7 @@ jobs:
     - run: docker build -t kubeflight:e2e .
     - run: kind load docker-image kubeflight:e2e
     - run: |
-        sed 's#ghcr.io/zyvorai/kubeflight:v0.2.0#kubeflight:e2e#' deploy/kubernetes/deployment.yaml > /tmp/deployment.yaml
+        sed 's#ghcr.io/zyvorai/zyvor-kubeflight:v0.2.0#kubeflight:e2e#' deploy/kubernetes/deployment.yaml > /tmp/deployment.yaml
         kubectl apply -f deploy/kubernetes/namespace.yaml
         kubectl apply -f deploy/kubernetes/rbac.yaml
         kubectl apply -f /tmp/deployment.yaml

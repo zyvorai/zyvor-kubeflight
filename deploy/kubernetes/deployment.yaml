@@ -19,7 +19,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
       - name: kubeflight
-        image: ghcr.io/zyvorai/kubeflight:v0.2.0
+        image: ghcr.io/zyvorai/zyvor-kubeflight:v0.2.0
         imagePullPolicy: IfNotPresent
         args: ["serve","--host","0.0.0.0","--port","8080"]
         ports: [{name: http, containerPort: 8080, protocol: TCP}]
