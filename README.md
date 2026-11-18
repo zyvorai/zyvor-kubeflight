@@ -16,6 +16,8 @@
 
 ### Know what may break before you deploy.
 
+[Client overview (PDF)](docs/KubeFlight-Client-Overview.pdf)
+
 **A deterministic Kubernetes preflight that simulates the deploy, not just the YAML.** It renders your manifests, places every replica against a cluster snapshot, evaluates security, RBAC and NetworkPolicy, diffs change impact, estimates cost and returns an evidence-backed safety decision, all locally.
 
 **Placement simulation** · **RBAC + NetworkPolicy** · **Blast radius and cost delta** · **SARIF for GitHub** · **0 LLM decisions**
