@@ -3,7 +3,7 @@
 # KubeFlight
 
 [![CI](https://github.com/zyvorai/zyvor-kubeflight/actions/workflows/ci.yml/badge.svg)](https://github.com/zyvorai/zyvor-kubeflight/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-0071e3?style=flat-square&labelColor=1d1d1f)](LICENSE)
+[![License: Zyvor Production](https://img.shields.io/badge/license-Zyvor%20Production%201.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.2.0-informational)](CHANGELOG.md)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![Docs](https://img.shields.io/badge/Docs-zyvorai.github.io%2Fzyvor--kubeflight-0071e3)](https://zyvorai.github.io/zyvor-kubeflight/)
@@ -80,7 +80,7 @@ KubeFlight is a preflight simulator, not an admission controller; run it in CI b
 
 ### Is this for you?
 
-KubeFlight is a small, open-source (Apache-2.0), local-first, deterministic preflight simulator — it's not a cost-monitoring dashboard, not a general-purpose policy engine, and not an AI-assisted deployment advisor.
+KubeFlight is a small, source-available (Zyvor Production License v1.0), local-first, deterministic preflight simulator — it's not a cost-monitoring dashboard, not a general-purpose policy engine, and not an AI-assisted deployment advisor.
 
 | | **KubeFlight** | Datree / Fairwinds Insights | Polaris / kube-score | OPA/Conftest, Kyverno | k8sgpt | `kubectl diff --dry-run=server` |
 |---|---|---|---|---|---|---|
@@ -88,7 +88,7 @@ KubeFlight is a small, open-source (Apache-2.0), local-first, deterministic pref
 | Decision method | Deterministic — "does not use an LLM to decide whether a deployment is safe" | Deterministic rules | Deterministic rules | Deterministic rules you author | LLM-based (probabilistic) | N/A (raw diff) |
 | Placement/scheduling simulation | Yes, against an offline or live cluster snapshot | No | No | No | No | No |
 | Cost estimation | Yes (provider-neutral) | Some (Fairwinds/Kubecost-adjacent tools) | No | No | No | No |
-| License | Apache-2.0 | Mixed open-core/proprietary | Apache-2.0 | Apache-2.0 | Apache-2.0 | N/A (built into kubectl) |
+| License | Zyvor Production 1.0 (free non-production) | Mixed open-core/proprietary | Apache-2.0 | Apache-2.0 | Apache-2.0 | N/A (built into kubectl) |
 
 *(General characterizations as of writing — verify current features against each project's own docs.)*
 
@@ -267,11 +267,14 @@ Release validation ([`TEST_RESULTS.md`](TEST_RESULTS.md)): 35/35 unit/API/CLI/re
 
 ## Support
 
-Free under Apache-2.0. If it helps you, you can donate any amount you like: <https://rzp.io/rzp/utwdYh3>. A donation is voluntary and supports development and maintenance. It is not a purchase: it buys no support, SLA, features, priority or license, and it is not tax-deductible (Zyvor AI Labs Private Limited is a company, not a charity). Support contracts are separate: [sales@zyvor.dev](mailto:sales@zyvor.dev).
+Non-production use is free under the Zyvor Production License v1.0; production use requires a commercial license (sales@zyvor.dev). If it helps you, you can donate any amount you like: <https://rzp.io/rzp/utwdYh3>. A donation is voluntary and supports development and maintenance. It is not a purchase: it buys no support, SLA, features, priority or license, and it is not tax-deductible (Zyvor AI Labs Private Limited is a company, not a charity). Support contracts are separate: [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
 ## License
 
-KubeFlight is **free and open source** under the [Apache License 2.0](LICENSE) (see [NOTICE](NOTICE)): use, modify and run it for personal, lab and commercial production use at no charge. That does not change.
+KubeFlight is source-available under the **[Zyvor Production License v1.0](LICENSE)** (SPDX `LicenseRef-Zyvor-Production-1.0`, also in [LICENSES/](LICENSES/LicenseRef-Zyvor-Production-1.0.txt); see [NOTICE](NOTICE)).
+
+- **Free** for evaluation, development, testing, proofs of concept, research, education and all other non-production use.
+- **Production use needs a commercial license** from Zyvor AI Labs. A 30-day trial key is available for production evaluation. Buy / get a quote: [zyvor.dev/buy](https://zyvor.dev/buy) · [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
 **Zyvor Enterprise** adds what production teams ask for: supported releases, deployment and upgrade guidance, priority incident triage, a named technical contact and 24x7 critical intake. Plans and terms: [docs/SUBSCRIPTION-MODEL.md](docs/SUBSCRIPTION-MODEL.md) · [Pricing](https://zyvor.dev/pricing?utm_source=github&utm_medium=kubeflight&utm_campaign=readme_license) · [Buy / get a quote](https://zyvor.dev/buy) · [sales@zyvor.dev](mailto:sales@zyvor.dev).
 
