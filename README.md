@@ -16,8 +16,6 @@
 
 ### Know what may break before you deploy.
 
-[Client overview (PDF)](docs/KubeFlight-Client-Overview.pdf)
-
 **A deterministic Kubernetes preflight that simulates the deploy, not just the YAML.** It renders your manifests, places every replica against a cluster snapshot, evaluates security, RBAC and NetworkPolicy, diffs change impact, estimates cost and returns an evidence-backed safety decision, all locally.
 
 **Placement simulation** · **RBAC + NetworkPolicy** · **Blast radius and cost delta** · **SARIF for GitHub** · **0 LLM decisions**
@@ -61,44 +59,17 @@ A valid manifest can still fail in production because of node capacity, existing
 
 ---
 
-## KubeFlight vs Polaris
-
-![KubeFlight vs Polaris: lint the manifest, then simulate the deploy](docs/ux/readme-vs.jpg)
-
-| | **KubeFlight** | **Polaris** |
-|---|---|---|
-| Primary job | Preflight simulation with an evidence-backed decision | Best-practice checks on workload configuration |
-| Security checks | Restricted Pod Security, including Windows HostProcess, SELinux, AppArmor and probe hosts | Built-in security checks plus custom checks |
-| Scheduling | Places every replica against an offline or live cluster snapshot | Not simulated |
-| RBAC | Permission contracts evaluated against submitted Roles and bindings | Not a focus |
-| Change impact | Baseline vs proposed diff, dependency graph, deletion-aware blast radius | Not modeled |
-| Cost | Provider-neutral request and storage estimate, baseline delta | Not estimated |
-| Where it runs | CLI, GitHub Action (SARIF), REST API and dashboard; no cluster needed | Dashboard, CLI audit, admission webhook |
-| **Choose Polaris when** | | You want continuous in-cluster audits and admission-time enforcement of best practices |
-
-KubeFlight is a preflight simulator, not an admission controller; run it in CI before the cluster ever sees the change.
-
-### Is this for you?
-
-KubeFlight is a small, source-available (Zyvor Production License v1.0), local-first, deterministic preflight simulator — it's not a cost-monitoring dashboard, not a general-purpose policy engine, and not an AI-assisted deployment advisor.
-
-| | **KubeFlight** | Datree / Fairwinds Insights | Polaris / kube-score | OPA/Conftest, Kyverno | k8sgpt | `kubectl diff --dry-run=server` |
-|---|---|---|---|---|---|---|
-| Primary scope | Preflight simulation: placement, RBAC, NetworkPolicy, cost delta, evidence-backed decision | Policy/config scanning + fleet dashboard (some proprietary) | Static manifest best-practice linting | Generic policy-as-code enforcement | LLM-based cluster diagnosis | Server-side dry-run diff only, no scoring |
-| Decision method | Deterministic — "does not use an LLM to decide whether a deployment is safe" | Deterministic rules | Deterministic rules | Deterministic rules you author | LLM-based (probabilistic) | N/A (raw diff) |
-| Placement/scheduling simulation | Yes, against an offline or live cluster snapshot | No | No | No | No | No |
-| Cost estimation | Yes (provider-neutral) | Some (Fairwinds/Kubecost-adjacent tools) | No | No | No | No |
-| License | Zyvor Production 1.0 (free non-production) | Mixed open-core/proprietary | Apache-2.0 | Apache-2.0 | Apache-2.0 | N/A (built into kubectl) |
-
-*(General characterizations as of writing — verify current features against each project's own docs.)*
-
----
-
 ## See it live
 
 ![KubeFlight dashboard: paste a manifest, get a safety score of 84 with review required, findings, scheduling, change impact and economics](docs/dashboard.png)
 
 *The embedded dashboard (`kubeflight serve`): the demo preflight scores 84/100, review required, with every finding explained.* A sample rendered report: [docs/demo-report.html](docs/demo-report.html).
+
+---
+
+## Is this for you?
+
+KubeFlight is a small, source-available (Zyvor Production License v1.0), local-first, deterministic preflight simulator, not an admission controller; run it in CI before the cluster ever sees the change. It's not a cost-monitoring dashboard, not a general-purpose policy engine, and not an AI-assisted deployment advisor.
 
 ---
 
