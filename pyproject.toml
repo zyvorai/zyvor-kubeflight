@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Know what will break before you deploy to Kubernetes."
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "LicenseRef-Zyvor-Production-1.0"}
+license = {text = "LicenseRef-Zyvor-Production-2.0"}
 authors = [{name = "Zyvor AI Labs"}]
 dependencies = [
   "fastapi==0.162.0",

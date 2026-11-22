@@ -1,6 +1,6 @@
 <!--
 Copyright 2026 Zyvor AI Labs · https://zyvor.dev
-SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
+SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 -->
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5f5f7"><title>KubeFlight — Know what will break before you deploy.</title>
@@ -12,7 +12,7 @@ SPDX-License-Identifier: LicenseRef-Zyvor-Production-1.0
 <section id="workspace" class="grid"><div class="card"><h2>Preflight</h2><p class="sub">Paste YAML or drop a rendered Kubernetes manifest. Analyzed by this KubeFlight instance. No external SaaS or AI calls.</p><div class="drop" onclick="document.getElementById('file').click()"><strong>Drop or choose YAML</strong><span>multi-document YAML · JSON · rendered Helm/Kustomize</span><input id="file" type="file" accept=".yaml,.yml,.json" hidden></div><div class="tabs"><button id="tnew" class="tab on" onclick="showTab('new')">Proposed</button><button id="tbase" class="tab" onclick="showTab('base')">Baseline</button></div><textarea id="manifests" spellcheck="false" placeholder="apiVersion: apps/v1\nkind: Deployment\n..."></textarea><textarea id="baseline" spellcheck="false" style="display:none" placeholder="Optional current/baseline manifests"></textarea><button id="run" class="btn primary run" onclick="runCheck()">Run preflight</button></div>
 <div class="card"><h2>Deployment safety</h2><p class="sub">Evidence-backed decision from deterministic rules and simulation.</p><div id="result"><div class="empty">Run a preflight to see your safety score.</div></div></div></section>
 <section id="details" class="detailgrid" style="display:none"><div class="card mini"><h3>Scheduling</h3><div id="schedule"></div></div><div class="card mini"><h3>Change impact</h3><div id="impact"></div></div><div class="card mini"><h3>Economics</h3><div id="cost"></div></div></section>
-<div class="footer">KubeFlight · Zyvor Production License · Built by Zyvor</div></main>
+<div class="footer">KubeFlight · Zyvor Production Licence · Built by Zyvor</div></main>
 <script>
 let snapshot=null;const M=document.getElementById('manifests'),B=document.getElementById('baseline');document.getElementById('file').onchange=async e=>{const f=e.target.files[0];if(f)M.value=await f.text()};function showTab(x){M.style.display=x==='new'?'block':'none';B.style.display=x==='base'?'block':'none';document.getElementById('tnew').classList.toggle('on',x==='new');document.getElementById('tbase').classList.toggle('on',x==='base')}
 async function loadDemo(){const d=await fetch('/api/demo').then(r=>r.json());M.value=d.manifests;B.value=d.baseline;snapshot=d.snapshot;document.querySelector('#workspace').scrollIntoView();runCheck()}
