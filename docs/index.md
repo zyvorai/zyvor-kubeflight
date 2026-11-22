@@ -4,7 +4,7 @@ hero:
   title: KubeFlight
   lead: "A local-first, deterministic Kubernetes preflight engine that analyzes rendered manifests, simulates scheduler placement, evaluates security, RBAC, and network policy, estimates cost, and returns an evidence-backed safety decision — without an LLM."
   swatches:
-    - {label: "Zyvor Production License"}
+    - {label: "Zyvor Production Licence"}
     - {label: "v0.2.0"}
     - {label: "Deterministic — no LLM"}
   highlights:
@@ -28,7 +28,7 @@ footnotes:
   - {marker: "5", text: "Live-cluster mode grants read-only get/list for Nodes, Namespaces, Pods, ServiceAccounts, StorageClasses and RuntimeClasses only — never Secrets, logs, exec, or writes.", href: "https://github.com/zyvorai/kubeflight#opt-in-live-cluster-snapshot-mode", href_label: "See the README."}
 ---
 
-KubeFlight is a source-available (Zyvor Production License v1.0), local-first Kubernetes deployment simulator
+KubeFlight is a source-available (Zyvor Production Licence v2.0), local-first Kubernetes deployment simulator
 and preflight engine from Zyvor AI Labs. It analyzes rendered manifests,
 optionally compares them with a baseline and a target-cluster snapshot,
 simulates placement, evaluates security/RBAC/network policy, estimates
