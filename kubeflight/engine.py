@@ -10,6 +10,8 @@ import yaml
 
 from .models import Assessment, Finding, ScheduleResult, SEVERITY_WEIGHT
 from .parser import resource_key
+from .extra_checks import extra_findings
+from .suppress import apply_suppressions
 from .quantities import cpu_millicores, memory_bytes, quantity, scalar_int, gib, QuantityError
 
 TARGET_KUBERNETES = "1.37"
@@ -591,7 +593,7 @@ def _cost(resources):
 
 # ---------- main ----------
 
-def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None, snapshot:dict[str,Any]|None=None, target_kubernetes:str=TARGET_KUBERNETES)->Assessment:
+def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None, snapshot:dict[str,Any]|None=None, target_kubernetes:str=TARGET_KUBERNETES, suppressions:list|None=None)->Assessment:
     findings=[]; sas=set(); pds=[]; storageclasses=set()
     for o in resources:
         m=o.get("metadata") or {}; ns=m.get("namespace","default"); name=m.get("name")
@@ -636,6 +638,7 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
             if k not in base_map or k not in cur_map or _hash(base_map[k])!=_hash(cur_map[k]): changed.append(k)
     deps=_dependencies(resources); base_deps=_dependencies(baseline or [])
     findings += _network_policy_findings(resources,deps,snapshot); findings += _rbac_requirement_findings(resources)
+    findings += extra_findings(resources,baseline)
     blast=_blast(changed,deps,base_deps)
     if changed and len(blast)>=3: findings.append(_finding("KF-BLAST-001","high","blast-radius","Wide dependency blast radius","ChangeSet",f"{len(blast)} dependent resources may be affected","Split the change, canary it, or add explicit rollout safeguards."))
     monthly=_cost(resources); base_cost=_cost(baseline) if baseline is not None else None
@@ -643,8 +646,11 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
         ratio=monthly/base_cost
         if ratio>1.50: findings.append(_finding("KF-COST-002","high","cost","Estimated monthly cost rises >50%","ChangeSet",f"${base_cost:.2f} -> ${monthly:.2f} ({(ratio-1)*100:.1f}% increase)","Review requests/replicas or explicitly approve the budget increase."))
         elif ratio>1.10: findings.append(_finding("KF-COST-001","medium","cost","Estimated monthly cost rises >10%","ChangeSet",f"${base_cost:.2f} -> ${monthly:.2f} ({(ratio-1)*100:.1f}% increase)","Review requests/replicas or update the approved cost budget."))
+    suppressed=[]
+    if suppressions:
+        findings,suppressed,notes=apply_suppressions(findings,suppressions); findings+=notes
     penalty=sum(SEVERITY_WEIGHT.get(f.severity,0) for f in findings); score=max(0,min(100,100-penalty)); maxsev=max((SEVERITY_WEIGHT.get(f.severity,0) for f in findings),default=0)
     decision="SAFE TO DEPLOY" if maxsev<SEVERITY_WEIGHT["high"] and score>=75 else ("REVIEW REQUIRED" if maxsev<SEVERITY_WEIGHT["critical"] and score>=50 else "DO NOT DEPLOY")
     summary={sev:sum(1 for f in findings if f.severity==sev) for sev in ["critical","high","medium","low","info"]}
     limitations=["Scheduler simulation is deterministic but not a byte-for-byte replacement for kube-scheduler plugins/admission webhooks.","Static dependency and NetworkPolicy analysis only evaluates dependencies discoverable from submitted manifests/annotations.","Provider-neutral cost estimates are directional unless rates are calibrated for your environment."]
-    return Assessment(score,decision,len(resources),findings,schedule,deps,changed,blast,monthly,base_cost,target_kubernetes,summary,limitations)
+    return Assessment(score,decision,len(resources),findings,schedule,deps,changed,blast,monthly,base_cost,target_kubernetes,summary,limitations,suppressed)

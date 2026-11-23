@@ -12,6 +12,7 @@ from . import __version__
 from .cluster import in_cluster_snapshot,ClusterError
 from .engine import assess
 from .parser import parse_text,ManifestError
+from .suppress import parse_suppressions
 
 WEB=Path(__file__).with_name("web")
 app=FastAPI(title="KubeFlight",version=__version__,docs_url="/api/docs",redoc_url=None)
@@ -47,6 +48,7 @@ class CheckRequest(BaseModel):
     baseline:str|None=Field(default=None,max_length=MAX_BODY)
     snapshot:dict[str,Any]|None=None
     use_in_cluster:bool=False
+    suppressions:list[dict[str,Any]]|None=Field(default=None,max_length=200)
 
 @app.get("/",response_class=HTMLResponse)
 def home():return (WEB/"index.html").read_text(encoding="utf-8")
@@ -65,6 +67,7 @@ def check(req:CheckRequest,request:Request):
             if os.getenv("KUBEFLIGHT_LIVE_CLUSTER","false").lower() not in {"1","true","yes"}:raise HTTPException(403,"live-cluster access is disabled; set KUBEFLIGHT_LIVE_CLUSTER=true explicitly")
             if not os.getenv("KUBEFLIGHT_API_TOKEN"):raise HTTPException(403,"live-cluster access requires KUBEFLIGHT_API_TOKEN")
             snapshot=in_cluster_snapshot()
-        return assess(resources,baseline,snapshot).to_dict()
+        sups=parse_suppressions({"ignore":req.suppressions}) if req.suppressions else None
+        return assess(resources,baseline,snapshot,suppressions=sups).to_dict()
     except HTTPException:raise
     except (ManifestError,ClusterError,ValueError) as e:raise HTTPException(400,str(e)) from e
