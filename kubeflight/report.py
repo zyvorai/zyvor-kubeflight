@@ -5,6 +5,9 @@ import html,json
 from .models import Assessment
 _ORDER={'critical':0,'high':1,'medium':2,'low':3,'info':4}
 
+def _md(v)->str:
+ return str(v).replace('\\','\\\\').replace('|','\\|').replace('`',"'").replace('<','&lt;').replace('>','&gt;').replace('\r',' ').replace('\n',' ')
+
 def text_report(a:Assessment)->str:
  d=a.to_dict(); lines=[f"KubeFlight — {d['decision']}",f"Safety score: {d['score']}/100",f"Resources: {d['resources']}  Findings: {len(d['findings'])}",f"Estimated monthly workload cost: ${d['monthly_cost']:.2f}"]
  if d['cost_delta'] is not None:lines.append(f"Cost delta: ${d['cost_delta']:+.2f}")
@@ -23,7 +26,7 @@ def json_report(a:Assessment)->str:return json.dumps(a.to_dict(),indent=2)+"\n"
 def markdown_report(a:Assessment)->str:
  d=a.to_dict(); icon='✅' if d['decision']=='SAFE TO DEPLOY' else ('⚠️' if d['decision']=='REVIEW REQUIRED' else '⛔')
  lines=[f"## ✈️ KubeFlight — {icon} {d['decision']}","",f"**Safety score:** {d['score']}/100 · **Resources:** {d['resources']} · **Cost:** ${d['monthly_cost']:.2f}/mo","", "| Severity | Category | Resource | Finding |","|---|---|---|---|"]
- for f in sorted(d['findings'],key=lambda x:_ORDER.get(x['severity'],len(_ORDER)))[:25]:lines.append(f"| {f['severity'].upper()} | {f['category']} | `{f['resource']}` | {f['title']} |")
+ for f in sorted(d['findings'],key=lambda x:_ORDER.get(x['severity'],len(_ORDER)))[:25]:lines.append(f"| {f['severity'].upper()} | {_md(f['category'])} | `{_md(f['resource'])}` | {_md(f['title'])} |")
  if d['blast_radius']:lines += ["",f"**Blast radius:** {len(d['blast_radius'])} dependent resource(s)."]
  lines += ["","_KubeFlight is a preflight simulator, not a substitute for Kubernetes admission controls or production validation._"]
  return "\n".join(lines)+"\n"

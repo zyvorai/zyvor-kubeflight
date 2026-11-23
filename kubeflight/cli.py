@@ -6,6 +6,7 @@ from pathlib import Path
 from . import __version__
 from .cluster import in_cluster_snapshot,load_snapshot,ClusterError
 from .engine import assess
+from .suppress import load_suppressions
 from .parser import load_path,autodetect_path,ManifestError
 from .report import text_report,json_report,html_report,markdown_report,sarif_report
 
@@ -26,7 +27,7 @@ def main(argv=None):
         if name=="check":c.add_argument("path")
         else:c.add_argument("path",nargs="?",default=".")
         c.add_argument("--baseline");c.add_argument("--cluster-snapshot");c.add_argument("--in-cluster",action="store_true")
-        c.add_argument("--format",choices=["text","json","html","markdown","sarif"],default="text");c.add_argument("--output");c.add_argument("--fail-on",choices=["never","high","critical"],default="critical");c.add_argument("--server-dry-run",action="store_true")
+        c.add_argument("--format",choices=["text","json","html","markdown","sarif"],default="text");c.add_argument("--output");c.add_argument("--fail-on",choices=["never","low","medium","high","critical"],default="critical");c.add_argument("--ignore-file",help="YAML list of reviewed, expiring suppressions");c.add_argument("--server-dry-run",action="store_true")
     s=sub.add_parser("serve",help="Run the KubeFlight dashboard/API");s.add_argument("--host",default="0.0.0.0");s.add_argument("--port",type=int,default=8080)
     a=p.parse_args(argv)
     if a.cmd=="serve":
@@ -35,21 +36,21 @@ def main(argv=None):
         path=autodetect_path(a.path) if a.cmd=="plan" else Path(a.path)
         resources=load_path(path);baseline=load_path(a.baseline) if a.baseline else None
         snapshot=load_snapshot(a.cluster_snapshot) if a.cluster_snapshot else (in_cluster_snapshot() if a.in_cluster else None)
-        result=assess(resources,baseline,snapshot)
+        result=assess(resources,baseline,snapshot,suppressions=load_suppressions(a.ignore_file) if a.ignore_file else None)
         if a.server_dry_run:
             ok,msg=_server_dry_run(str(path))
             if not ok:
                 print(f"kubeflight: server dry-run failed/unavailable: {msg}",file=sys.stderr)
                 return 4
-    except (ManifestError,ClusterError,ValueError,json.JSONDecodeError) as e:
+    except (ManifestError,ClusterError,ValueError,OSError,json.JSONDecodeError) as e:
         print(f"kubeflight: {e}",file=sys.stderr);return 2
     renderer={"text":text_report,"json":json_report,"html":html_report,"markdown":markdown_report,"sarif":sarif_report}[a.format]
     out=renderer(result)
     if a.output:Path(a.output).write_text(out,encoding="utf-8")
     else:print(out,end="")
     sev={f.severity for f in result.findings}
-    if a.fail_on=="critical" and "critical" in sev:return 3
-    if a.fail_on=="high" and ({"critical","high"}&sev):return 3
+    order=["low","medium","high","critical"]
+    if a.fail_on!="never" and sev&set(order[order.index(a.fail_on):]):return 3
     return 0
 
 if __name__=="__main__":raise SystemExit(main())

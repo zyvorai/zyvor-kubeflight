@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Exposure checks: `KF-EXP-001` (LoadBalancer/NodePort Services, high when a LoadBalancer has no `loadBalancerSourceRanges`; not re-flagged when unchanged against `--baseline`), `KF-EXP-002` (Ingress without TLS), `KF-EXP-003` (Service `externalIPs`).
+- RBAC checks: `KF-RBAC-020` (wildcard verbs/resources), `KF-RBAC-021` (`cluster-admin` bindings), `KF-RBAC-022` (bindings to anonymous/unauthenticated).
+- `KF-STO-010` PVC shrink against the baseline; `KF-REL-020`/`KF-REL-021` HPA bounds.
+- Suppressions: `--ignore-file` (and `suppressions` on `POST /api/check`) take reviewed, reasoned entries with an optional expiry. Expired entries keep the finding and add `KF-SUP-900`; suppressing a critical finding needs an expiry (`KF-SUP-901`). Suppressed findings are listed under `suppressed` in the JSON report.
+- `--fail-on` accepts `low` and `medium`.
+
+### Fixed
+- `pytest -q` now works from a clean checkout (`pythonpath` configured); CI previously relied on `PYTHONPATH`.
+- Markdown reports escape table separators, backticks and HTML in resource names and titles taken from manifests.
+
+### Changed
+- Dependencies: PyYAML 6.0.4, uvicorn 0.54.0 (fastapi, pytest and httpx were already current).
+
 ## 0.2.0 — 2026-09-06
 
 ### Correctness

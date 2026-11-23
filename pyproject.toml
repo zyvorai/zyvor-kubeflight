@@ -12,8 +12,8 @@ license = {text = "LicenseRef-Zyvor-Production-2.0"}
 authors = [{name = "Zyvor AI Labs"}]
 dependencies = [
   "fastapi==0.165.0",
-  "uvicorn==0.53.0",
-  "PyYAML==6.0.3",
+  "uvicorn==0.54.0",
+  "PyYAML==6.0.4",
 ]
 
 [project.scripts]
@@ -25,3 +25,7 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 kubeflight = ["web/*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
