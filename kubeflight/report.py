@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: LicenseRef-Zyvor-Production-2.0
 from __future__ import annotations
 import html,json
+from dataclasses import replace
+from pathlib import Path
+from . import __version__
 from .models import Assessment
+from .registry import get_rule,SECURITY_SEVERITY,SEVERITY_RANK
 _ORDER={'critical':0,'high':1,'medium':2,'low':3,'info':4}
 
 def _md(v)->str:
@@ -31,14 +35,43 @@ def markdown_report(a:Assessment)->str:
  lines += ["","_KubeFlight is a preflight simulator, not a substitute for Kubernetes admission controls or production validation._"]
  return "\n".join(lines)+"\n"
 
+def _sarif_uri(path:str)->str:
+ p=Path(path)
+ try:p=p.resolve().relative_to(Path.cwd().resolve())
+ except (ValueError,OSError):pass
+ return p.as_posix()
+
 def sarif_report(a:Assessment)->str:
  d=a.to_dict(); rules={}; results=[]
  level={'critical':'error','high':'error','medium':'warning','low':'note','info':'note'}
  for f in d['findings']:
-  rules.setdefault(f['id'],{"id":f['id'],"shortDescription":{"text":f['title']},"help":{"text":f['recommendation']}})
-  results.append({"ruleId":f['id'],"level":level[f['severity']],"message":{"text":f"{f['resource']}: {f['title']}. {f['evidence']}"}})
- sarif={"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"KubeFlight","informationUri":"https://github.com/zyvorai/kubeflight","rules":list(rules.values())}},"results":results}]}
+  if f['id'] not in rules:
+   reg=get_rule(f['id']); sev=reg.severity if reg else f['severity']
+   help_text=f['recommendation'] if reg is None else f"{reg.rationale}\n\nFix: {reg.fix}"+(f"\n\nReference: {reg.reference}" if reg.reference else "")
+   help_md=f['recommendation'] if reg is None else f"**Why it matters:** {reg.rationale}\n\n**Fix:** {reg.fix}"+(f"\n\n[Reference]({reg.reference})" if reg.reference else "")
+   rule={"id":f['id'],"name":f['id'],"shortDescription":{"text":f['title']},"fullDescription":{"text":reg.rationale if reg else f['title']},
+         "help":{"text":help_text,"markdown":help_md},
+         "defaultConfiguration":{"level":level.get(sev,'warning')},
+         "properties":{"security-severity":SECURITY_SEVERITY.get(sev,"5.0"),"tags":["kubernetes","kubeflight",f['category']]}}
+   if reg and reg.reference:rule["helpUri"]=reg.reference
+   rules[f['id']]=rule
+  loc={"logicalLocations":[{"fullyQualifiedName":f['resource'],"kind":"resource"}]}
+  where=a.locations.get(f['resource'])
+  if where:loc["physicalLocation"]={"artifactLocation":{"uri":_sarif_uri(where[0])},"region":{"startLine":max(1,int(where[1]))}}
+  results.append({"ruleId":f['id'],"ruleIndex":list(rules).index(f['id']),"level":level.get(f['severity'],'warning'),
+                  "message":{"text":f"{f['resource']}: {f['title']}. {f['evidence']}"},"locations":[loc],
+                  "properties":{"security-severity":SECURITY_SEVERITY.get(f['severity'],"5.0"),"severity":f['severity'],"category":f['category']}})
+ sarif={"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"KubeFlight","version":__version__,"informationUri":"https://github.com/zyvorai/kubeflight","rules":list(rules.values())}},"results":results}]}
  return json.dumps(sarif,indent=2)+"\n"
+
+def filter_min_severity(a:Assessment,min_severity:str|None)->Assessment:
+ """Return a copy of the assessment whose findings (and summary) are limited to >= min_severity.
+ Score and decision still reflect the full set of findings."""
+ if not min_severity or min_severity=="info":return a
+ floor=SEVERITY_RANK[min_severity]
+ kept=[f for f in a.findings if SEVERITY_RANK.get(f.severity,0)>=floor]
+ summary={k:(v if SEVERITY_RANK[k]>=floor else 0) for k,v in a.summary.items()}
+ return replace(a,findings=kept,summary=summary)
 
 def html_report(a:Assessment)->str:
  d=a.to_dict(); rows="".join(f"<tr><td><span class='sev {html.escape(f['severity'])}'>{html.escape(f['severity'])}</span></td><td>{html.escape(f['category'])}</td><td><code>{html.escape(f['resource'])}</code></td><td><b>{html.escape(f['title'])}</b><br><small>{html.escape(f['evidence'])}</small><br><em>{html.escape(f['recommendation'])}</em></td></tr>" for f in sorted(d['findings'],key=lambda x:_ORDER.get(x['severity'],len(_ORDER))))

@@ -105,7 +105,7 @@ Or auto-detect a conventional Kubernetes/Helm/Kustomize path:
 kubeflight plan
 ```
 
-Reports: `kubeflight check <path> --format json|html|markdown|sarif --output <file>`. Optional authoritative validation: `kubeflight check <path> --server-dry-run` shells out to `kubectl apply --dry-run=server` against a configured cluster.
+Reports: `kubeflight check <path> --format json|html|markdown|sarif --output <file>`. Add `--min-severity high` to show only findings at or above a severity (the score and `--fail-on` gate still use every finding). SARIF carries rule help, `security-severity` and file/line locations for manifest files. `kubeflight explain KF-SEC-030` prints why a check exists and how to fix it (`kubeflight explain --list` lists them all). Optional authoritative validation: `kubeflight check <path> --server-dry-run` shells out to `kubectl apply --dry-run=server` against a configured cluster.
 
 New here? [`docs/FAQ.md`](docs/FAQ.md) covers licensing, support, and production-readiness questions; [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) covers real operational issues with their documented fix.
 
