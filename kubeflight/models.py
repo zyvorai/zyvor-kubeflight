@@ -48,6 +48,7 @@ class Assessment:
     limitations: list[str] = field(default_factory=list)
     suppressed: list[dict[str, Any]] = field(default_factory=list)
     locations: dict[str, tuple[str, int]] = field(default_factory=dict)  # resource key -> (file, line); not serialized to JSON
+    profile: dict[str, Any] | None = None  # policy-profile summary (name, dropped, adjusted); None when no profile was applied
     def to_dict(self) -> dict[str, Any]:
         return {
             "score":self.score,"decision":self.decision,"resources":self.resources,
@@ -56,5 +57,5 @@ class Assessment:
             "monthly_cost":round(self.monthly_cost,2),
             "baseline_monthly_cost":None if self.baseline_monthly_cost is None else round(self.baseline_monthly_cost,2),
             "cost_delta":None if self.baseline_monthly_cost is None else round(self.monthly_cost-self.baseline_monthly_cost,2),
-            "target_kubernetes":self.target_kubernetes,"summary":self.summary,"limitations":self.limitations,"suppressed":self.suppressed,
+            "target_kubernetes":self.target_kubernetes,"summary":self.summary,"limitations":self.limitations,"suppressed":self.suppressed,"profile":self.profile,
         }

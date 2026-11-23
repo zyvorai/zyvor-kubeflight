@@ -1,0 +1,18 @@
+# KubeFlight simple advisory format. Not a vulnerability database: curate or export it yourself.
+version: "2026-11-01"      # label for the data set you exported
+expires: 2027-01-31        # after this date KubeFlight reports the data as stale (KF-VUL-002)
+advisories:
+  - id: DEMO-2026-0001
+    package: openssl
+    ecosystem: debian
+    affected: ["<3.0.13"]
+    fixed: 3.0.13
+    severity: high
+    summary: Example advisory for the demo (not a real CVE)
+  - id: DEMO-2026-0002
+    package: requests
+    ecosystem: PyPI
+    affected: [">=2.0.0,<2.31.0"]
+    fixed: 2.31.0
+    severity: medium
+    summary: Example advisory for the demo (not a real CVE)

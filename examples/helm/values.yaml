@@ -1,0 +1,18 @@
+# Deliberately unsafe values file for `kubeflight values examples/helm/values.yaml`
+image:
+  repository: ghcr.io/example/payments
+  tag: latest
+hostNetwork: true
+securityContext:
+  privileged: true
+  runAsUser: 0
+resources: {}
+ingress:
+  enabled: true
+  hosts: [payments.example.com]
+postgresql:
+  auth:
+    password: changeme        # value is never printed in findings
+    existingSecret: db-credentials
+config:
+  apiToken: "not-a-real-token-123"

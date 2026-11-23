@@ -21,6 +21,8 @@ PROBE = "https://kubernetes.io/docs/tasks/configure-pod-container/configure-live
 PDBREF = "https://kubernetes.io/docs/tasks/run-application/configure-pdb/"
 RBACREF = "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"
 SVCREF = "https://kubernetes.io/docs/concepts/services-networking/service/"
+IMGREF = "https://kubernetes.io/docs/concepts/containers/images/#image-names"
+OSVREF = "https://ossf.github.io/osv-schema/"
 DEPREF = "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
 
 
@@ -113,6 +115,23 @@ _RULES: list[Rule] = [
     Rule("KF-BLAST-001", "Wide dependency blast radius", "high", "blast-radius", "The change affects many dependent resources.", "Split the change, canary it, or add explicit rollout safeguards.", ""),
     Rule("KF-COST-001", "Estimated monthly cost rises >10%", "medium", "cost", "Requests/replicas grew noticeably relative to the baseline.", "Review requests/replicas or update the approved budget.", ""),
     Rule("KF-COST-002", "Estimated monthly cost rises >50%", "high", "cost", "Requests/replicas grew sharply relative to the baseline.", "Review requests/replicas or explicitly approve the budget increase.", ""),
+    Rule("KF-IMG-001", "Image not pinned by digest", "info", "supply-chain", "A tag can be re-pointed after review; only a digest identifies the exact bytes that will run (medium when the image policy sets require_digest).", "Reference the image as repo:tag@sha256:<digest>.", IMGREF),
+    Rule("KF-IMG-002", "Mutable image tag", "medium", "supply-chain", "Tags such as stable, main, dev or nightly are moving targets, so two rollouts of the same manifest can run different code.", "Use an immutable version tag and ideally a digest.", IMGREF),
+    Rule("KF-IMG-003", "Image from a registry outside the allow-list", "high", "supply-chain", "The registry is not in the allowed_registries list you configured, so the image has not been through your approved supply path.", "Mirror the image into an approved registry, or extend the allow-list after review.", IMGREF),
+    Rule("KF-IMG-004", "Malformed image reference", "medium", "supply-chain", "The image string is not a valid [registry/]repository[:tag][@digest] reference and will fail to pull (or is an unexpanded template).", "Use a valid lower-case repository name with a tag or digest.", IMGREF),
+    Rule("KF-VUL-001", "Known-vulnerable component", "high", "supply-chain", "A component listed in a user-supplied SBOM falls in an affected version range of a user-supplied advisory. Severity is taken from the advisory (explicit field, then CVSS v3 vector, else a medium default) and the evidence names its source. This is not a scanner: it only knows the two files you gave it.", "Update the component, rebuild the image and regenerate the SBOM; suppress with a reasoned, expiring entry only if it is not exploitable.", OSVREF),
+    Rule("KF-VUL-002", "Advisory data is stale", "medium", "supply-chain", "The advisory file's expires date has passed, so new vulnerabilities may be missing and a clean result is not trustworthy.", "Refresh the advisory file and set a new expires date.", OSVREF),
+    Rule("KF-VUL-003", "Advisory data has no version or expiry", "low", "supply-chain", "Without a version or expires field KubeFlight cannot tell whether the advisory data is current.", "Add version and expires (YYYY-MM-DD) fields to the advisory file.", OSVREF),
+    Rule("KF-VUL-004", "SBOM matches no workload image", "low", "supply-chain", "An SBOM was supplied but its subject does not match any image in the manifests (different repository, tag or digest), so it contributed nothing.", "Bind it with --sbom FILE=IMAGE or add a kubeflight:image property to the SBOM.", ""),
+    Rule("KF-VUL-005", "No SBOM for image", "info", "supply-chain", "SBOMs were supplied but none covers this image, so it was not checked against the advisories.", "Supply an SBOM for the image if it should be covered.", ""),
+    Rule("KF-VUL-006", "Vulnerability findings truncated", "low", "supply-chain", "More matches than the report limit were found; only the most severe are listed.", "Fix the most severe matches first or narrow the SBOM scope.", ""),
+    Rule("KF-HLM-001", "Values enable privileged or root execution", "high", "helm-values", "A raw values file turns on privileged, allowPrivilegeEscalation, hostPID/hostIPC, runAsUser: 0 or runAsNonRoot: false; the chart will usually render this into the workload.", "Remove the flag or set it to the safe value; grant individual capabilities instead of privileged.", PSS),
+    Rule("KF-HLM-002", "Values enable hostNetwork", "high", "helm-values", "hostNetwork shares the node's network namespace and bypasses NetworkPolicy.", "Remove hostNetwork or set it to false.", PSS),
+    Rule("KF-HLM-003", "Values use the latest image tag", "medium", "helm-values", "A latest (or untagged :latest) image makes releases non-reproducible.", "Set an explicit version tag, ideally with a digest.", IMGREF),
+    Rule("KF-HLM-004", "Values leave resource requests empty", "medium", "helm-values", "An empty resources block (the scaffold default) schedules the workload as BestEffort.", "Set cpu and memory requests and a memory limit.", RES),
+    Rule("KF-HLM-005", "Values enable an ingress without TLS", "medium", "helm-values", "ingress.enabled is true but no tls entries are configured, so traffic is unencrypted.", "Add ingress.tls with a certificate secret.", "https://kubernetes.io/docs/concepts/services-networking/ingress/#tls"),
+    Rule("KF-HLM-006", "Values contain a default or well-known password", "high", "helm-values", "A credential-named key holds a well-known default (admin, root, password, ...). KubeFlight reports the key path only and never prints the value.", "Use an existing Secret, a generated value or an external secret manager.", "https://helm.sh/docs/chart_best_practices/values/"),
+    Rule("KF-HLM-007", "Values contain a hard-coded secret", "medium", "helm-values", "A credential-named key has a literal value committed in the values file. KubeFlight reports the key path only and never prints the value.", "Reference an existing Secret or inject the value at deploy time.", "https://helm.sh/docs/chart_best_practices/values/"),
 ]
 
 REGISTRY: dict[str, Rule] = {r.id: r for r in _RULES}

@@ -12,9 +12,13 @@ _ORDER={'critical':0,'high':1,'medium':2,'low':3,'info':4}
 def _md(v)->str:
  return str(v).replace('\\','\\\\').replace('|','\\|').replace('`',"'").replace('<','&lt;').replace('>','&gt;').replace('\r',' ').replace('\n',' ')
 
+def _profile_line(p:dict)->str:
+ return f"Profile: {p['name']} ({sum(p['dropped'].values())} finding(s) not counted, {len(p['adjusted'])} severity adjustment(s))"
+
 def text_report(a:Assessment)->str:
  d=a.to_dict(); lines=[f"KubeFlight — {d['decision']}",f"Safety score: {d['score']}/100",f"Resources: {d['resources']}  Findings: {len(d['findings'])}",f"Estimated monthly workload cost: ${d['monthly_cost']:.2f}"]
  if d['cost_delta'] is not None:lines.append(f"Cost delta: ${d['cost_delta']:+.2f}")
+ if d.get('profile'):lines.append(_profile_line(d['profile']))
  lines.append("")
  for f in sorted(d['findings'],key=lambda x:_ORDER.get(x['severity'],len(_ORDER))):
   lines.append(f"[{f['severity'].upper():8}] {f['category']:12} {f['resource']} — {f['title']}")
@@ -29,7 +33,7 @@ def json_report(a:Assessment)->str:return json.dumps(a.to_dict(),indent=2)+"\n"
 
 def markdown_report(a:Assessment)->str:
  d=a.to_dict(); icon='✅' if d['decision']=='SAFE TO DEPLOY' else ('⚠️' if d['decision']=='REVIEW REQUIRED' else '⛔')
- lines=[f"## ✈️ KubeFlight — {icon} {d['decision']}","",f"**Safety score:** {d['score']}/100 · **Resources:** {d['resources']} · **Cost:** ${d['monthly_cost']:.2f}/mo","", "| Severity | Category | Resource | Finding |","|---|---|---|---|"]
+ lines=[f"## ✈️ KubeFlight — {icon} {d['decision']}","",f"**Safety score:** {d['score']}/100 · **Resources:** {d['resources']} · **Cost:** ${d['monthly_cost']:.2f}/mo"+(f" · **Profile:** {_md(d['profile']['name'])}" if d.get('profile') else ""),"", "| Severity | Category | Resource | Finding |","|---|---|---|---|"]
  for f in sorted(d['findings'],key=lambda x:_ORDER.get(x['severity'],len(_ORDER)))[:25]:lines.append(f"| {f['severity'].upper()} | {_md(f['category'])} | `{_md(f['resource'])}` | {_md(f['title'])} |")
  if d['blast_radius']:lines += ["",f"**Blast radius:** {len(d['blast_radius'])} dependent resource(s)."]
  lines += ["","_KubeFlight is a preflight simulator, not a substitute for Kubernetes admission controls or production validation._"]
@@ -41,10 +45,10 @@ def _sarif_uri(path:str)->str:
  except (ValueError,OSError):pass
  return p.as_posix()
 
-def sarif_report(a:Assessment)->str:
+def sarif_report(a:Assessment,states:list[str]|None=None)->str:
  d=a.to_dict(); rules={}; results=[]
  level={'critical':'error','high':'error','medium':'warning','low':'note','info':'note'}
- for f in d['findings']:
+ for n,f in enumerate(d['findings']):
   if f['id'] not in rules:
    reg=get_rule(f['id']); sev=reg.severity if reg else f['severity']
    help_text=f['recommendation'] if reg is None else f"{reg.rationale}\n\nFix: {reg.fix}"+(f"\n\nReference: {reg.reference}" if reg.reference else "")
@@ -61,6 +65,7 @@ def sarif_report(a:Assessment)->str:
   results.append({"ruleId":f['id'],"ruleIndex":list(rules).index(f['id']),"level":level.get(f['severity'],'warning'),
                   "message":{"text":f"{f['resource']}: {f['title']}. {f['evidence']}"},"locations":[loc],
                   "properties":{"security-severity":SECURITY_SEVERITY.get(f['severity'],"5.0"),"severity":f['severity'],"category":f['category']}})
+  if states and n<len(states):results[-1]["baselineState"]=states[n]
  sarif={"version":"2.1.0","$schema":"https://json.schemastore.org/sarif-2.1.0.json","runs":[{"tool":{"driver":{"name":"KubeFlight","version":__version__,"informationUri":"https://github.com/zyvorai/kubeflight","rules":list(rules.values())}},"results":results}]}
  return json.dumps(sarif,indent=2)+"\n"
 

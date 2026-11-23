@@ -1,0 +1,4 @@
+name: permissive
+description: Blockers only. Findings below high severity do not count, so the score and the gate reflect only high and critical problems. Critical findings can never be hidden.
+min_severity: high
+fail_on: critical

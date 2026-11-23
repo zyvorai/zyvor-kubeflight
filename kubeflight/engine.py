@@ -13,6 +13,7 @@ from .parser import resource_key
 from .extra_checks import extra_findings
 from .posture import posture_findings, _np_types
 from .suppress import apply_suppressions
+from .profiles import apply_profile
 from .quantities import cpu_millicores, memory_bytes, quantity, scalar_int, gib, QuantityError
 
 TARGET_KUBERNETES = "1.37"
@@ -597,7 +598,7 @@ def _cost(resources):
 
 # ---------- main ----------
 
-def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None, snapshot:dict[str,Any]|None=None, target_kubernetes:str=TARGET_KUBERNETES, suppressions:list|None=None, extra:list[Finding]|None=None)->Assessment:
+def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None, snapshot:dict[str,Any]|None=None, target_kubernetes:str=TARGET_KUBERNETES, suppressions:list|None=None, extra:list[Finding]|None=None, profile=None)->Assessment:
     findings=[]; sas=set(); pds=[]; storageclasses=set()
     for o in resources:
         m=o.get("metadata") or {}; ns=m.get("namespace","default"); name=m.get("name")
@@ -654,6 +655,7 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
         ratio=monthly/base_cost
         if ratio>1.50: findings.append(_finding("KF-COST-002","high","cost","Estimated monthly cost rises >50%","ChangeSet",f"${base_cost:.2f} -> ${monthly:.2f} ({(ratio-1)*100:.1f}% increase)","Review requests/replicas or explicitly approve the budget increase."))
         elif ratio>1.10: findings.append(_finding("KF-COST-001","medium","cost","Estimated monthly cost rises >10%","ChangeSet",f"${base_cost:.2f} -> ${monthly:.2f} ({(ratio-1)*100:.1f}% increase)","Review requests/replicas or update the approved cost budget."))
+    findings,profile_report=apply_profile(findings,profile)
     suppressed=[]
     if suppressions:
         findings,suppressed,notes=apply_suppressions(findings,suppressions); findings+=notes
@@ -665,4 +667,4 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
     for o in resources:
         f,l=getattr(o,"source_file",None),getattr(o,"source_line",None)
         if f: locations.setdefault(resource_key(o),(f,l or 1))
-    return Assessment(score,decision,len(resources),findings,schedule,deps,changed,blast,monthly,base_cost,target_kubernetes,summary,limitations,suppressed,locations)
+    return Assessment(score,decision,len(resources),findings,schedule,deps,changed,blast,monthly,base_cost,target_kubernetes,summary,limitations,suppressed,locations,profile_report)

@@ -1,0 +1,10 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "docker.io/library/nginx:1.27",
+  "documentDescribes": ["SPDXRef-Image"],
+  "packages": [
+    {"SPDXID": "SPDXRef-Image", "name": "nginx", "versionInfo": "1.27"},
+    {"SPDXID": "SPDXRef-zlib", "name": "zlib", "versionInfo": "1.2.11", "externalRefs": [{"referenceType": "purl", "referenceLocator": "pkg:apk/alpine/zlib@1.2.11"}]}
+  ]
+}
