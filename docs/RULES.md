@@ -35,3 +35,14 @@ Every finding id lives in `kubeflight/registry.py` with its title, typical sever
 | `KF-REL-012` | critical | RollingUpdate with `maxUnavailable` and `maxSurge` both zero |
 
 Network posture checks only see NetworkPolicies in the submitted bundle; a default-deny that already exists in the cluster is not known unless it is included, so use `--ignore-file` for those namespaces.
+
+## Built-in rule families added with custom rules
+
+| ID | Severity | Meaning |
+|---|---|---|
+| `KF-FLD-001` | medium | Unknown field in a core-kind manifest (typo), with a suggestion |
+| `KF-FLD-002` | high | Field has the wrong type (for example `replicas: "2"`, numeric ConfigMap value) |
+| `KF-UPG-010` | critical | API removed at or before `--target-kubernetes` |
+| `KF-UPG-011` | medium (low if no removal planned) | API deprecated as of `--target-kubernetes` |
+| `KF-CUS-NNN` | per rule | Your own rules, see [Custom rules](CUSTOM_RULES.md) |
+| `KF-CUS-900` | medium | A custom rule could not be evaluated against a resource |

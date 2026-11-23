@@ -46,6 +46,8 @@ nav:
   - Design:
       - Architecture: ARCHITECTURE.md
       - Rules: RULES.md
+      - Custom rules: CUSTOM_RULES.md
+      - Research: RESEARCH.md
       - Threat model: THREAT_MODEL.md
   - Deployment: DEPLOYMENT.md
 extra:

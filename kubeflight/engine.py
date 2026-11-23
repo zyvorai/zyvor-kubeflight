@@ -597,7 +597,7 @@ def _cost(resources):
 
 # ---------- main ----------
 
-def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None, snapshot:dict[str,Any]|None=None, target_kubernetes:str=TARGET_KUBERNETES, suppressions:list|None=None)->Assessment:
+def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None, snapshot:dict[str,Any]|None=None, target_kubernetes:str=TARGET_KUBERNETES, suppressions:list|None=None, extra:list[Finding]|None=None)->Assessment:
     findings=[]; sas=set(); pds=[]; storageclasses=set()
     for o in resources:
         m=o.get("metadata") or {}; ns=m.get("namespace","default"); name=m.get("name")
@@ -643,6 +643,10 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
     deps=_dependencies(resources); base_deps=_dependencies(baseline or [])
     findings += _network_policy_findings(resources,deps,snapshot); findings += _rbac_requirement_findings(resources)
     findings += extra_findings(resources,baseline); findings += posture_findings(resources)
+    if extra:
+        # the versioned API table (KF-UPG-010/011) supersedes the coarse KF-UPG-001 for the same resource
+        versioned={f.resource for f in extra if f.id in {'KF-UPG-010','KF-UPG-011'}}
+        findings=[f for f in findings if not (f.id=='KF-UPG-001' and f.resource in versioned)]+extra
     blast=_blast(changed,deps,base_deps)
     if changed and len(blast)>=3: findings.append(_finding("KF-BLAST-001","high","blast-radius","Wide dependency blast radius","ChangeSet",f"{len(blast)} dependent resources may be affected","Split the change, canary it, or add explicit rollout safeguards."))
     monthly=_cost(resources); base_cost=_cost(baseline) if baseline is not None else None
