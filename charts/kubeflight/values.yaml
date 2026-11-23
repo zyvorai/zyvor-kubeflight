@@ -46,3 +46,14 @@ ingress:
     - path: /
       pathType: Prefix
   tls: []
+
+# Gateway API front door served by Setura, an alternative to `ingress` (enable one, not both).
+# Needs the Setura controller: setura gateway install --image ghcr.io/zyvorai/zyvor-setura-gateway:0.7.0
+gateway:
+  enabled: false
+  className: setura
+  httpPort: 80
+  httpsPort: 443
+  tls:
+    enabled: false
+    secretName: kubeflight-tls
