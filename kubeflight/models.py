@@ -47,6 +47,7 @@ class Assessment:
     summary: dict[str, int]
     limitations: list[str] = field(default_factory=list)
     suppressed: list[dict[str, Any]] = field(default_factory=list)
+    locations: dict[str, tuple[str, int]] = field(default_factory=dict)  # resource key -> (file, line); not serialized to JSON
     def to_dict(self) -> dict[str, Any]:
         return {
             "score":self.score,"decision":self.decision,"resources":self.resources,

@@ -11,6 +11,7 @@ import yaml
 from .models import Assessment, Finding, ScheduleResult, SEVERITY_WEIGHT
 from .parser import resource_key
 from .extra_checks import extra_findings
+from .posture import posture_findings, _np_types
 from .suppress import apply_suppressions
 from .quantities import cpu_millicores, memory_bytes, quantity, scalar_int, gib, QuantityError
 
@@ -53,7 +54,9 @@ def _pod_spec(obj: dict[str, Any]) -> tuple[dict[str, Any] | None, dict[str, Any
 def _replicas(obj: dict[str, Any]) -> int:
     kind=obj.get("kind")
     if kind in {"Pod","Job","CronJob","DaemonSet"}: return 1
-    try: return max(0, int((obj.get("spec") or {}).get("replicas", 1) or 1))
+    v=(obj.get("spec") or {}).get("replicas",1)
+    if v is None or isinstance(v,bool): return 1
+    try: return max(0, int(v))
     except Exception: return 1
 
 def _selector_labels(obj: dict[str, Any]) -> dict[str, str]:
@@ -165,7 +168,7 @@ def _security_findings(obj:dict[str,Any], pod:dict[str,Any], rk:str)->list[Findi
     all_containers=list(pod.get("initContainers") or [])+list(pod.get("containers") or [])+list(pod.get("ephemeralContainers") or [])
     for c in all_containers:
         name=c.get("name","container"); sc=c.get("securityContext") or {}
-        if sc.get("windowsOptions",{}).get("hostProcess") is True:
+        if (sc.get("windowsOptions") or {}).get("hostProcess") is True:
             out.append(_finding("KF-PSS-006","critical","security",f"Windows HostProcess enabled: {name}",rk,"windowsOptions.hostProcess=true","Disable HostProcess for Restricted workloads."))
         if sc.get("privileged") is True:
             out.append(_finding("KF-SEC-020","critical","security",f"Privileged container: {name}",rk,"securityContext.privileged=true","Remove privileged mode."))
@@ -178,7 +181,9 @@ def _security_findings(obj:dict[str,Any], pod:dict[str,Any], rk:str)->list[Findi
         if csec not in {"RuntimeDefault","Localhost"}:
             out.append(_finding("KF-SEC-011","high","security",f"Seccomp profile missing/invalid: {name}",rk,"Restricted policy requires RuntimeDefault or Localhost","Set seccompProfile.type: RuntimeDefault."))
         run_non_root=sc.get("runAsNonRoot",psc.get("runAsNonRoot")); uid=sc.get("runAsUser",psc.get("runAsUser"))
-        if uid is not None and int(uid)==0:
+        try: uid=None if uid is None else int(uid)
+        except (TypeError,ValueError): uid=-1  # unparsable: not provably non-zero, never treated as root
+        if uid==0:
             out.append(_finding("KF-PSS-009","high","security",f"Container explicitly runs as UID 0: {name}",rk,"runAsUser=0 violates Restricted policy","Use a non-zero UID."))
         elif run_non_root is not True and uid is None:
             out.append(_finding("KF-SEC-010","high","security",f"Non-root execution not proven: {name}",rk,"runAsNonRoot is not true and runAsUser is not a known non-zero UID","Set runAsNonRoot: true or a non-zero runAsUser."))
@@ -206,6 +211,7 @@ def _reliability_findings(obj,pod,rk):
         if "memory" not in lim: out.append(_finding("KF-REL-002","low","reliability",f"Memory limit missing: {name}",rk,"resources.limits.memory missing","Set a memory limit after validating workload behavior."))
         img=str(c.get("image", "")); last=img.rsplit("/",1)[-1]
         if not img or img.endswith(":latest") or (":" not in last and "@sha256:" not in img): out.append(_finding("KF-SUP-001","medium","supply-chain",f"Unpinned image: {name}",rk,f"image={img or '<missing>'}","Pin an immutable digest or explicit version tag."))
+        if obj.get("kind") in {"Job","CronJob"}: continue  # run-to-completion workloads do not serve traffic
         if not c.get("readinessProbe"): out.append(_finding("KF-REL-003","medium","reliability",f"Readiness probe missing: {name}",rk,"No readinessProbe configured","Add a readiness probe before production rollout."))
         if not c.get("livenessProbe"): out.append(_finding("KF-REL-004","low","reliability",f"Liveness probe missing: {name}",rk,"No livenessProbe configured","Add a liveness/startup strategy appropriate to the application."))
     return out
@@ -276,7 +282,7 @@ def _ports_for_service(svc:dict[str,Any])->set[int|str]:
 
 def _rule_ports_allow(rule:dict[str,Any], svc_ports:set[int|str])->bool:
     ports=rule.get("ports")
-    if ports is None: return True
+    if not ports: return True  # missing or empty `ports` matches all ports
     for p in ports:
         rp=p.get("port")
         if rp is None: return True
@@ -310,11 +316,9 @@ def _network_policy_findings(resources:list[dict[str,Any]], deps:dict[str,list[s
                 for np in nps:
                     nm=np.get("metadata") or {}; spec=np.get("spec") or {}; nns=nm.get("namespace","default")
                     if nns==dns and _selector_matches(spec.get("podSelector") or {},dlabels):
-                        types=spec.get("policyTypes") or (["Ingress"] if "ingress" in spec else [])
-                        if "Ingress" in types: ingress.append(np)
+                        if "Ingress" in _np_types(spec): ingress.append(np)
                     if nns==sns and _selector_matches(spec.get("podSelector") or {},slabels):
-                        types=spec.get("policyTypes") or (["Ingress"] if "ingress" in spec else []) + (["Egress"] if "egress" in spec else [])
-                        if "Egress" in types: egress.append(np)
+                        if "Egress" in _np_types(spec): egress.append(np)
                 ingress_allowed=not ingress
                 unknown=False
                 if ingress:
@@ -322,7 +326,7 @@ def _network_policy_findings(resources:list[dict[str,Any]], deps:dict[str,list[s
                         for rule in (np.get("spec") or {}).get("ingress") or []:
                             if not _rule_ports_allow(rule,ports): continue
                             peers=rule.get("from")
-                            if peers is None: ingress_allowed=True; break
+                            if not peers: ingress_allowed=True; break  # missing or empty `from` matches all sources
                             for peer in peers:
                                 r=_peer_allows(peer,sns,slabels,nsl)
                                 if r is True: ingress_allowed=True; break
@@ -335,7 +339,7 @@ def _network_policy_findings(resources:list[dict[str,Any]], deps:dict[str,list[s
                         for rule in (np.get("spec") or {}).get("egress") or []:
                             if not _rule_ports_allow(rule,ports): continue
                             peers=rule.get("to")
-                            if peers is None: egress_allowed=True; break
+                            if not peers: egress_allowed=True; break  # missing or empty `to` matches all destinations
                             for peer in peers:
                                 r=_peer_allows(peer,dns,dlabels,nsl)
                                 if r is True: egress_allowed=True; break
@@ -638,7 +642,7 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
             if k not in base_map or k not in cur_map or _hash(base_map[k])!=_hash(cur_map[k]): changed.append(k)
     deps=_dependencies(resources); base_deps=_dependencies(baseline or [])
     findings += _network_policy_findings(resources,deps,snapshot); findings += _rbac_requirement_findings(resources)
-    findings += extra_findings(resources,baseline)
+    findings += extra_findings(resources,baseline); findings += posture_findings(resources)
     blast=_blast(changed,deps,base_deps)
     if changed and len(blast)>=3: findings.append(_finding("KF-BLAST-001","high","blast-radius","Wide dependency blast radius","ChangeSet",f"{len(blast)} dependent resources may be affected","Split the change, canary it, or add explicit rollout safeguards."))
     monthly=_cost(resources); base_cost=_cost(baseline) if baseline is not None else None
@@ -653,4 +657,8 @@ def assess(resources:list[dict[str,Any]], baseline:list[dict[str,Any]]|None=None
     decision="SAFE TO DEPLOY" if maxsev<SEVERITY_WEIGHT["high"] and score>=75 else ("REVIEW REQUIRED" if maxsev<SEVERITY_WEIGHT["critical"] and score>=50 else "DO NOT DEPLOY")
     summary={sev:sum(1 for f in findings if f.severity==sev) for sev in ["critical","high","medium","low","info"]}
     limitations=["Scheduler simulation is deterministic but not a byte-for-byte replacement for kube-scheduler plugins/admission webhooks.","Static dependency and NetworkPolicy analysis only evaluates dependencies discoverable from submitted manifests/annotations.","Provider-neutral cost estimates are directional unless rates are calibrated for your environment."]
-    return Assessment(score,decision,len(resources),findings,schedule,deps,changed,blast,monthly,base_cost,target_kubernetes,summary,limitations,suppressed)
+    locations={}
+    for o in resources:
+        f,l=getattr(o,"source_file",None),getattr(o,"source_line",None)
+        if f: locations.setdefault(resource_key(o),(f,l or 1))
+    return Assessment(score,decision,len(resources),findings,schedule,deps,changed,blast,monthly,base_cost,target_kubernetes,summary,limitations,suppressed,locations)
