@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added (supply chain, profiles, CI, values)
+- Image hygiene without a registry: `KF-IMG-001` (no digest), `KF-IMG-002` (moving tag), `KF-IMG-003` (registry outside the allow-list), `KF-IMG-004` (malformed reference). `--image-policy FILE` / `--allow-registry` (and `image_policy`, `allow_registries` in the API).
+- Offline SBOM and advisory matching: `--sbom FILE[=IMAGE]` (CycloneDX JSON, SPDX 2.x JSON) with `--advisories FILE` (simple format or OSV subset with `version`/`expires`). `KF-VUL-001` (known-vulnerable component, severity from the advisory with a stated source, CVSS v3 computed locally), `KF-VUL-002` (stale data), `KF-VUL-003` (no version/expiry), `KF-VUL-004`..`006` (coverage and truncation). Explicitly not a scanner; limitations are added to every report. See `docs/SUPPLY_CHAIN.md`, `examples/supply/`.
+- Policy profiles: `--profile baseline|restricted|strict|permissive` and `--profile-file FILE` (data files in `kubeflight/profiles/`), `kubeflight profiles list|show`, `profile` in the JSON report and API. Critical findings can be raised but never hidden. See `docs/PROFILES.md`.
+- PR/CI: `--format pr-comment`, `--baseline-report`, `--fail-on-new [SEV]`, `kubeflight diff-report old.json new.json`, SARIF `baselineState`, `POST /api/diff`. `action.yml` exposes profile, baseline report, fail-on-new, supply-chain inputs and a `pr-comment` output. See `docs/CI_INTEGRATION.md`.
+- `kubeflight values FILE|DIR...` and `POST /api/values`: Helm values hygiene `KF-HLM-001`..`007` on a raw values file (never prints secret values; line-accurate SARIF locations).
+- Dashboard: findings link to the registry explanation (`GET /api/rules/{id}`, `GET /api/rules`) and a read-only panel lists suppressed findings and the active profile. No build step.
+
+### Fixed (this round)
+- `action.yml` appended the Step Summary only if the gate passed; a failing gate skipped it. The summary is now published first.
+- `--fail-on` default now comes from the profile when one is selected (still `critical` otherwise).
+
+
 ### Added (custom rules, field validation, API removal table)
 - Custom rules: `kubeflight check|plan --rules FILE` (repeatable; also `rules` on `POST /api/check`) loads YAML rules (`KF-CUS-NNN`) written in a small sandboxed expression language (path selectors, comparisons, `all`/`any` quantifiers, a handful of functions). No `eval`/`exec`; the interpreter enforces size, nesting, step and regex-safety limits, and evaluation failures surface as `KF-CUS-900` findings instead of crashing the run. See `docs/CUSTOM_RULES.md` and `examples/rules/`.
 - `kubeflight rules test FILE...` runs the tests embedded in rule files (`--require-tests` fails rules without any).

@@ -121,6 +121,16 @@ Reports: `kubeflight check <path> --format json|html|markdown|sarif --output <fi
 
 New here? [`docs/FAQ.md`](docs/FAQ.md) covers licensing, support, and production-readiness questions; [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) covers real operational issues with their documented fix.
 
+### Profiles, supply chain and CI
+
+```bash
+kubeflight check deploy/ --profile restricted                      # which findings count (docs/PROFILES.md)
+kubeflight check deploy/ --sbom app.cdx.json --advisories adv.yaml --allow-registry 'ghcr.io/acme/*'   # offline, not a scanner (docs/SUPPLY_CHAIN.md)
+kubeflight values charts/app/values.yaml                           # raw Helm values hygiene
+kubeflight check deploy/ --baseline-report base.json --fail-on-new high --format pr-comment   # only new findings (docs/CI_INTEGRATION.md)
+kubeflight diff-report old.json new.json
+```
+
 ### Dashboard
 
 ```bash
