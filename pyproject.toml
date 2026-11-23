@@ -24,7 +24,7 @@ packages = ["kubeflight"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-kubeflight = ["web/*"]
+kubeflight = ["web/*", "profiles/*.yaml"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

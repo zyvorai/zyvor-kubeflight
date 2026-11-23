@@ -43,6 +43,12 @@ How comparable tools work, what KubeFlight lacked, and why the 0.3 features were
 | 6 | Rego engine support | Ecosystem compatibility, but a heavy dependency and a large attack surface for untrusted rules. | Rejected |
 | 7 | JSON Schema based rules (Polaris/Datree style) | Familiar, but poor at cross-field logic and quantifier-style checks; Datree's demise shows the risk of betting on one vendor format. | Rejected |
 
+## Not built in this round
+
+- Live CVE lookups, image scanning and registry digest resolution: need the network and a vulnerability database; KubeFlight only matches user-supplied SBOM and advisory files and says so.
+- SPDX 3 / XML / tag-value SBOMs and CVSS v4 scoring: not parsed (clear error / default severity).
+- Rendering charts for values checks (Helm unavailable in the test environment): values checks are key-name heuristics on the raw file.
+
 ## Design notes
 
 - The expression language mirrors the useful core of CEL (paths, comparisons, `all`/`any` macros, quantity helpers) without importing a CEL runtime. Non-Turing-completeness plus an explicit step budget gives the termination guarantee CEL gets from its cost model.

@@ -1,0 +1,5 @@
+# Images may only come from these registries (fnmatch patterns; "host/path/*" limits to a path prefix).
+allowed_registries:
+  - ghcr.io/example/*
+  - registry.example.com
+require_digest: false

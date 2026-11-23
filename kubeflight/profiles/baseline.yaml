@@ -1,0 +1,11 @@
+name: baseline
+description: Pod Security Baseline posture. Hardening that only the Restricted standard requires is downgraded, informational noise is dropped, everything else counts.
+min_severity: low
+fail_on: critical
+severity:
+  KF-SEC-010: low      # non-root is a Restricted requirement
+  KF-SEC-011: low      # seccomp is a Restricted requirement
+  KF-SEC-021: low      # allowPrivilegeEscalation=false is a Restricted requirement
+  KF-SEC-022: medium   # Baseline limits added capabilities; only Restricted requires drop ALL
+  KF-SEC-023: info     # read-only root filesystem is not a Pod Security standard
+  KF-PSS-009: low      # Baseline permits UID 0

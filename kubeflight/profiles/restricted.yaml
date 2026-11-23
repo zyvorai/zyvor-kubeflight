@@ -1,0 +1,14 @@
+name: restricted
+description: Pod Security Restricted posture plus network and exposure hygiene. Hardening gaps are raised and the gate fails on high.
+min_severity: low
+fail_on: high
+severity:
+  KF-SEC-023: medium
+  KF-SEC-030: medium
+  KF-NET-010: medium
+  KF-NET-011: low
+  KF-NET-012: medium
+  KF-SUP-001: high
+  KF-EXP-002: high
+  KF-IMG-001: low
+  KF-HLM-004: high

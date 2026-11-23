@@ -1,0 +1,19 @@
+name: strict
+description: Everything counts, including informational findings, with supply-chain, probe and network gaps raised. The gate fails on medium.
+extends: restricted
+min_severity: info
+fail_on: medium
+severity:
+  KF-IMG-001: medium
+  KF-IMG-002: high
+  KF-REL-002: medium
+  KF-REL-004: medium
+  KF-ROL-001: medium
+  KF-SEC-032: medium
+  KF-NET-011: medium
+  KF-NET-022: medium
+  KF-FLD-001: high
+  KF-RBAC-001: medium
+  KF-HLM-007: high
+  KF-VUL-003: medium
+  KF-VUL-005: low

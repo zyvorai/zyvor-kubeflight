@@ -47,6 +47,9 @@ nav:
       - Architecture: ARCHITECTURE.md
       - Rules: RULES.md
       - Custom rules: CUSTOM_RULES.md
+      - Policy profiles: PROFILES.md
+      - Supply chain: SUPPLY_CHAIN.md
+      - CI integration: CI_INTEGRATION.md
       - Research: RESEARCH.md
       - Threat model: THREAT_MODEL.md
   - Deployment: DEPLOYMENT.md

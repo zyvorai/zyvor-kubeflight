@@ -16,6 +16,10 @@ Rules are deterministic and include an evidence string plus a remediation recomm
 
 Every finding id lives in `kubeflight/registry.py` with its title, typical severity, category, rationale, fix and a reference link. Run `kubeflight explain KF-NET-020` for one entry or `kubeflight explain --list` for all of them. `--min-severity <level>` limits the findings printed in a report without changing the score or the `--fail-on` gate.
 
+## Supply-chain, SBOM and Helm values checks
+
+Image hygiene (`KF-IMG-001`..`004`), offline SBOM/advisory matching (`KF-VUL-001`..`006`) and raw `values.yaml` checks (`KF-HLM-001`..`007`) are described in [Supply chain](SUPPLY_CHAIN.md). Which of these (and every other finding) counts, and at what severity, is controlled by [policy profiles](PROFILES.md); PR-oriented output is in [CI integration](CI_INTEGRATION.md).
+
 ## Hardening, network and availability checks
 
 | Id | Severity | What it flags |

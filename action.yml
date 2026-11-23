@@ -8,10 +8,20 @@ inputs:
   report: {description: JSON report path, default: kubeflight-report.json}
   sarif: {description: SARIF report path, default: kubeflight.sarif}
   summary: {description: Markdown summary path, default: kubeflight-summary.md}
+  profile: {description: "Policy profile preset: baseline, restricted, strict or permissive", required: false}
+  profile-file: {description: Custom YAML policy profile (layered on profile), required: false}
+  baseline-report: {description: "Earlier JSON report (for example from the base branch); the summary and comment then show only new findings", required: false}
+  fail-on-new: {description: "Severity (info, low, medium, high, critical): fail only on findings new vs baseline-report at or above it; replaces fail-on", required: false}
+  image-policy: {description: YAML image policy (allowed_registries, require_digest), required: false}
+  allow-registry: {description: Newline-separated registries images may come from, required: false}
+  sbom: {description: "Newline-separated CycloneDX/SPDX JSON SBOM paths (FILE or FILE=IMAGE); needs advisories", required: false}
+  advisories: {description: Newline-separated advisory file paths (needs sbom), required: false}
+  pr-comment: {description: Markdown PR-comment path (carries a hidden marker so a comment step can update it in place), default: kubeflight-comment.md}
 outputs:
   report: {description: JSON report, value: "${{ inputs.report }}"}
   sarif: {description: SARIF report, value: "${{ inputs.sarif }}"}
   summary: {description: Markdown PR/step summary, value: "${{ inputs.summary }}"}
+  pr-comment: {description: Markdown PR comment, value: "${{ inputs.pr-comment }}"}
 runs:
   using: composite
   steps:
@@ -24,13 +34,42 @@ runs:
       INPUT_PATH: "${{ inputs.path }}"
       INPUT_BASELINE: "${{ inputs.baseline }}"
       INPUT_FAIL_ON: "${{ inputs['fail-on'] }}"
+      INPUT_PROFILE: "${{ inputs.profile }}"
+      INPUT_PROFILE_FILE: "${{ inputs['profile-file'] }}"
+      INPUT_BASELINE_REPORT: "${{ inputs['baseline-report'] }}"
+      INPUT_FAIL_ON_NEW: "${{ inputs['fail-on-new'] }}"
+      INPUT_IMAGE_POLICY: "${{ inputs['image-policy'] }}"
+      INPUT_ALLOW_REGISTRY: "${{ inputs['allow-registry'] }}"
+      INPUT_SBOM: "${{ inputs.sbom }}"
+      INPUT_ADVISORIES: "${{ inputs.advisories }}"
       JSON_OUT: "${{ inputs.report }}"
       SARIF_OUT: "${{ inputs.sarif }}"
       SUMMARY_OUT: "${{ inputs.summary }}"
+      COMMENT_OUT: "${{ inputs['pr-comment'] }}"
     run: |
-      base=()
-      if [[ -n "$INPUT_BASELINE" ]]; then base+=(--baseline "$INPUT_BASELINE"); fi
-      kubeflight check "$INPUT_PATH" "${base[@]}" --format json --output "$JSON_OUT" --fail-on never
-      kubeflight check "$INPUT_PATH" "${base[@]}" --format sarif --output "$SARIF_OUT" --fail-on never
-      kubeflight check "$INPUT_PATH" "${base[@]}" --format markdown --output "$SUMMARY_OUT" --fail-on "$INPUT_FAIL_ON"
+      # Inputs reach the shell only through env vars and are always quoted: no expression is spliced into the script.
+      args=()
+      if [[ -n "$INPUT_BASELINE" ]]; then args+=(--baseline "$INPUT_BASELINE"); fi
+      if [[ -n "$INPUT_PROFILE" ]]; then args+=(--profile "$INPUT_PROFILE"); fi
+      if [[ -n "$INPUT_PROFILE_FILE" ]]; then args+=(--profile-file "$INPUT_PROFILE_FILE"); fi
+      if [[ -n "$INPUT_BASELINE_REPORT" ]]; then args+=(--baseline-report "$INPUT_BASELINE_REPORT"); fi
+      if [[ -n "$INPUT_IMAGE_POLICY" ]]; then args+=(--image-policy "$INPUT_IMAGE_POLICY"); fi
+      while IFS= read -r line; do
+        if [[ -n "$line" ]]; then args+=(--allow-registry "$line"); fi
+      done <<< "$INPUT_ALLOW_REGISTRY"
+      while IFS= read -r line; do
+        if [[ -n "$line" ]]; then args+=(--sbom "$line"); fi
+      done <<< "$INPUT_SBOM"
+      while IFS= read -r line; do
+        if [[ -n "$line" ]]; then args+=(--advisories "$line"); fi
+      done <<< "$INPUT_ADVISORIES"
+      gate=(--fail-on "${INPUT_FAIL_ON:-critical}")
+      if [[ -n "$INPUT_FAIL_ON_NEW" ]]; then gate=(--fail-on-new "$INPUT_FAIL_ON_NEW"); fi
+      kubeflight check "$INPUT_PATH" "${args[@]}" --format json --output "$JSON_OUT" --fail-on never
+      kubeflight check "$INPUT_PATH" "${args[@]}" --format sarif --output "$SARIF_OUT" --fail-on never
+      kubeflight check "$INPUT_PATH" "${args[@]}" --format pr-comment --output "$COMMENT_OUT" --fail-on never
+      # Run the gate last, but publish the summary first so a failing run still shows why.
+      rc=0
+      kubeflight check "$INPUT_PATH" "${args[@]}" --format markdown --output "$SUMMARY_OUT" "${gate[@]}" || rc=$?
       cat "$SUMMARY_OUT" >> "$GITHUB_STEP_SUMMARY"
+      exit "$rc"
