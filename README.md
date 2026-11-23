@@ -40,6 +40,18 @@ Version 0.2.0 ([CHANGELOG.md](CHANGELOG.md)):
 | **`kubeflight plan`, Markdown and SARIF** | Auto-detects deployment roots and Helm/Kustomize renderers; the GitHub Action emits JSON, SARIF and a step summary. |
 | **Safer defaults** | No service-account token mounted by default; live-cluster mode is explicit, read-only and needs bearer auth. |
 
+### Since 0.2.0: your own rules, typo catching, version-aware API removals
+
+- **Custom rules** (`--rules rules.yaml`, `kubeflight rules test rules.yaml`): policy as YAML with a safe expression language, no Rego and no code execution. [Guide](docs/CUSTOM_RULES.md).
+- **Field validation** (`KF-FLD-001/002`): catches `replica:` for `replicas:` and `value: 8080` in env, offline.
+- **`--target-kubernetes 1.30`**: flags APIs deprecated or removed as of that version, with the replacement (`KF-UPG-010/011`).
+
+```bash
+kubeflight check examples/typos/typos.yaml --target-kubernetes 1.30
+kubeflight rules test examples/rules/custom-rules.yaml
+kubeflight check examples/unsafe/unsafe.yaml --rules examples/rules/custom-rules.yaml
+```
+
 ---
 
 ## Why KubeFlight

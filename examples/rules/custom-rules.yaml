@@ -1,0 +1,51 @@
+# Example custom rules. Run: kubeflight check examples/demo/app.yaml --rules examples/rules/custom-rules.yaml
+# Test them:                 kubeflight rules test examples/rules/custom-rules.yaml
+rules:
+  - id: KF-CUS-001
+    title: Every container must set a memory limit
+    severity: high
+    kinds: [Deployment, StatefulSet, DaemonSet, Job, Pod]
+    assert: 'all c in containers: exists(c.resources.limits.memory)'
+    recommendation: Set resources.limits.memory on every container.
+    tests:
+      - name: limit present
+        expect: pass
+        resource:
+          kind: Deployment
+          spec: {template: {spec: {containers: [{name: a, resources: {limits: {memory: 1Gi}}}]}}}
+      - name: limit missing
+        expect: fail
+        resource:
+          kind: Deployment
+          spec: {template: {spec: {containers: [{name: a}]}}}
+      - name: other kinds are skipped
+        expect: skip
+        resource: {kind: Service}
+
+  - id: KF-CUS-002
+    title: Production workloads need an owner label
+    severity: medium
+    kinds: [Deployment]
+    match: 'metadata.namespace == "prod"'
+    assert: 'exists(metadata.labels["team"])'
+    tests:
+      - {name: labelled, expect: pass, resource: {kind: Deployment, metadata: {namespace: prod, labels: {team: pay}}}}
+      - {name: unlabelled, expect: fail, resource: {kind: Deployment, metadata: {namespace: prod}}}
+      - {name: not prod, expect: skip, resource: {kind: Deployment, metadata: {namespace: dev}}}
+
+  - id: KF-CUS-003
+    title: Images must come from the approved registry and not use :latest
+    severity: high
+    assert: 'all c in containers: startswith(c.image, "registry.example.com/") and not endswith(c.image, ":latest")'
+    tests:
+      - {name: ok, expect: pass, resource: {kind: Pod, spec: {containers: [{name: a, image: "registry.example.com/app:1.2"}]}}}
+      - {name: latest, expect: fail, resource: {kind: Pod, spec: {containers: [{name: a, image: "registry.example.com/app:latest"}]}}}
+
+  - id: KF-CUS-004
+    title: Memory limit above 4Gi per container
+    severity: medium
+    kinds: [Deployment]
+    assert: 'all c in containers: default(mem(c.resources.limits.memory), 0) <= mem("4Gi")'
+    tests:
+      - {name: small, expect: pass, resource: {kind: Deployment, spec: {template: {spec: {containers: [{name: a, resources: {limits: {memory: 512Mi}}}]}}}}}
+      - {name: big, expect: fail, resource: {kind: Deployment, spec: {template: {spec: {containers: [{name: a, resources: {limits: {memory: 8Gi}}}]}}}}}

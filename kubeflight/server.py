@@ -13,6 +13,10 @@ from .cluster import in_cluster_snapshot,ClusterError
 from .engine import assess
 from .parser import parse_text,ManifestError
 from .suppress import parse_suppressions
+from .plus import plus_findings
+from .rules import parse_rules,MAX_FILE_BYTES as MAX_RULES_BYTES
+from .engine import TARGET_KUBERNETES
+from .apis import parse_version
 
 WEB=Path(__file__).with_name("web")
 app=FastAPI(title="KubeFlight",version=__version__,docs_url="/api/docs",redoc_url=None)
@@ -48,6 +52,9 @@ class CheckRequest(BaseModel):
     baseline:str|None=Field(default=None,max_length=MAX_BODY)
     snapshot:dict[str,Any]|None=None
     use_in_cluster:bool=False
+    rules:str|None=Field(default=None,max_length=MAX_RULES_BYTES)
+    target_kubernetes:str=Field(default=TARGET_KUBERNETES,max_length=32)
+    field_check:bool=True
     suppressions:list[dict[str,Any]]|None=Field(default=None,max_length=200)
 
 @app.get("/",response_class=HTMLResponse)
@@ -68,6 +75,8 @@ def check(req:CheckRequest,request:Request):
             if not os.getenv("KUBEFLIGHT_API_TOKEN"):raise HTTPException(403,"live-cluster access requires KUBEFLIGHT_API_TOKEN")
             snapshot=in_cluster_snapshot()
         sups=parse_suppressions({"ignore":req.suppressions}) if req.suppressions else None
-        return assess(resources,baseline,snapshot,suppressions=sups).to_dict()
+        parse_version(req.target_kubernetes)
+        extra=plus_findings(resources,target=req.target_kubernetes,rules=parse_rules(req.rules,'request rules') if req.rules else None,field_check=req.field_check)
+        return assess(resources,baseline,snapshot,target_kubernetes=req.target_kubernetes,suppressions=sups,extra=extra).to_dict()
     except HTTPException:raise
     except (ManifestError,ClusterError,ValueError) as e:raise HTTPException(400,str(e)) from e
